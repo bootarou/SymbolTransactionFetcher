@@ -8,7 +8,7 @@ It is suitable for both server-side and client-side environments (Node.js recomm
 
 ## 🇯🇵 概要（Japanese Summary）
 
-SymbolTransactionFetcher は、Symbolブロックチェーン上のトランザクション履歴を複数のノードから並列取得するユーティリティクラスです。
+SymbolTransactionFetcher は、Symbolブロックチェーン上のトランザクション履歴をアドレスを指定して複数のノードから並列取得するユーティリティクラスです。
 
 ### 主な特徴
 
