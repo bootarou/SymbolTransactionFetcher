@@ -1,132 +1,128 @@
+
 # SymbolTransactionFetcher
 
-SymbolTransactionFetcherは、Symbolブロックチェーンのトランザクション履歴を複数ノードから効率的に取得できるjs用ユーティリティクラスです。
+**SymbolTransactionFetcher** is a JavaScript utility class that efficiently retrieves transaction histories from multiple Symbol blockchain nodes in parallel.  
+It is suitable for both server-side and client-side environments (Node.js recommended).
 
-## 特徴
+---
 
-- 複数のSymbolノードを利用した分散・並列リクエストによる高速なトランザクション取得
-- アドレス単位で全トランザクションやアグリゲートトランザクションの取得が可能
-- トランザクションハッシュ配列からの詳細取得もサポート
-- NFTDriveデータの復元メソッドも搭載
-- サーバー・クライアント両対応（Node.js推奨）
-  
+## 🇯🇵 概要（Japanese Summary）
 
-## インストール
+SymbolTransactionFetcher は、Symbolブロックチェーン上のトランザクション履歴を複数のノードから並列取得するユーティリティクラスです。
 
-リポジトリをクローンしてご利用ください。
+### 主な特徴
 
+- 複数ノードに対する並列リクエストによる高速取得
+- 通常・アグリゲートトランザクションの取得対応
+- トランザクションハッシュ配列からの個別取得
+- NFTDriveのメタデータおよびbase64データ復元機能を搭載
+- Node.js / ブラウザ両対応（Webpackでバンドル可能）
 
+---
 
+## 🔧 Installation
 
-### ブラウザ版
+Clone this repository:
 
-バンドル版を読み込みます。
+```bash
+git clone https://github.com/bootarou/SymbolTransactionFetcher.git
+```
 
-dist/bundle.main.js
+You can use it either in:
 
-## 設定例
+- Browser (via bundled script)
+- Node.js (via `require()` or `import`)
+
+---
+
+## 🌐 Browser Usage
+
+Include the bundled file:
 
 ```html
-<script src="bundle.min.js"></script>
+<script src="./dist/bundle.min.js"></script>
 <script>
-const NODELIST = [
-  "https://symbol-node1.example.com:3001",
-  "https://symbol-node2.example.com:3001",
-  "https://symbol-node3.example.com:3001"
-
+  const nodes = [
+    "https://symbol-node1.example.com:3001",
+    "https://symbol-node2.example.com:3001",
+    "https://symbol-node3.example.com:3001"
   ];
-    
-const fetcher = new SymbolTransactionFetcher(NODELIST);
-    fetcher.getAllTransactions("あなたのアドレス")
-       .then(txs => console.log(txs));
 
+  const fetcher = new SymbolTransactionFetcher(nodes);
+  fetcher.getAllTransactions("YOUR-ADDRESS-HERE")
+         .then(txs => console.log(txs));
 </script>
 ```
 
+---
 
-### nodejs版
+## 🖥️ Node.js Usage
 
-
-node/inde.js or src/sybmol-transaction-fetcher.js
-
-## 設定例
-
-```javascript
-
+```js
 const SymbolTransactionFetcher = require('./symbol-transaction-fetcher.js');
+
 const nodes = [
   "https://symbol-node1.example.com:3001",
-  "https://symbol-node1.example.com:3001",
+  "https://symbol-node2.example.com:3001",
   "https://symbol-node3.example.com:3001"
 ];
+
 const fetcher = new SymbolTransactionFetcher(nodes);
 
-fetcher.getAllTransactions("あなたのアドレス")
+fetcher.getAllTransactions("YOUR-ADDRESS-HERE")
   .then(txs => console.log(txs));
 ```
 
-### 共通
+---
 
-Symbolノードを設定する。
+## 🔍 API Overview
 
+### `getAllTransactions(address: string): Promise<Array>`
 
+Retrieve all confirmed transactions for the given address.
 
+### `getAllTransactionsAggregate(address: string): Promise<Array>`
 
-## 主な機能
+Retrieve all aggregate transactions, including inner transactions.
 
-- `getAllTransactions(address::string)`  
-  指定アドレスの全トランザクション履歴を取得
-  出力はデフォルトRESTのまま全てを返します。
+### `fetchTransactionsByHashes(hashes: Array): Promise<Array>`
 
-- `getAllTransactionsAggregate(address::string)`  
-  指定アドレスのアグリゲートトランザクション履歴を取得
-  アグリゲートインナートランザクションを含む全てをデフォルトのRESTを返します。
+Fetch transaction details from a list of confirmed transaction hashes.
 
-- `fetchTransactionsByHashes(hashes::array)`  
-  トランザクションハッシュ配列から取得
-  デフォルトRESTを返します。
+### `getNFTDriveData(txs: Array): Promise<{ header: object, data: string }>`
 
-- `getNFTDriveData(txdata:array)`  
-  NFTDriveデータの復元
-  デフォルトのRESTを引数に入れます。
-  詳しくは
-  
-  - sample/sample-get-nftdriveData.html
-
-
-  ヘッダー付きbase64データを返します。
+Reconstruct NFTDrive-encoded data from an array of Symbol transactions.
 
 ```json
-
-{"header":
-    {
-    "mimeType": "MIMETYPE",
-    "id": "Mosaic or Id",
-    "serial": "Serial",
-    "owner": "ownerAddress",
-    "message": "Message",
+{
+  "header": {
+    "mimeType": "image/png",
+    "id": "mosaicId",
+    "serial": "serialNumber",
+    "owner": "address",
+    "message": "original message",
     "extension_1": "",
-    "extension_2": "",
-    "extension_3": "",
-    "extension_4": "",
-    "extension_5": "",
-    "extension_6": "",
-    "extension_7": "",
-    "extension_8": "",
-    "extension_9": "",
+    ...
     "extension_10": ""
-     }
-,"data":"base64/.................."
+  },
+  "data": "base64/encoded/file/contents/..."
 }
-
-
 ```
 
+See also: [`sample/sample-get-nftdriveData.html`](./sample/sample-get-nftdriveData.html)
 
-## ライセンス
+---
 
-このプロジェクトは [MIT ライセンス](./LICENSE.txt) のもとで公開されています。
+## 📄 License
 
+This project is licensed under the [MIT License](./LICENSE.txt).
+
+---
+
+## 👤 Author
+
+Created by [NFTDrive](https://nftdrive.net) & bootarou  
+(c) 2025 NFTDrive
 
 ## 作者
 
