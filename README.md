@@ -75,7 +75,7 @@ fetcher.getAllTransactions("YOUR-ADDRESS-HERE")
 
 ---
 
-## 🔍 API Overview
+## 🔍 Function Overview
 
 - `getAllTransactions(address: string): Promise<Array>`
 
