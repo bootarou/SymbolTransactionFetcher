@@ -77,19 +77,19 @@ fetcher.getAllTransactions("YOUR-ADDRESS-HERE")
 
 ## 🔍 API Overview
 
-### `getAllTransactions(address: string): Promise<Array>`
+- `getAllTransactions(address: string): Promise<Array>`
 
 Retrieve all confirmed transactions for the given address.
 
-### `getAllTransactionsAggregate(address: string): Promise<Array>`
+- `getAllTransactionsAggregate(address: string): Promise<Array>`
 
 Retrieve all aggregate transactions, including inner transactions.
 
-### `fetchTransactionsByHashes(hashes: Array): Promise<Array>`
+- `fetchTransactionsByHashes(hashes: Array): Promise<Array>`
 
 Fetch transaction details from a list of confirmed transaction hashes.
 
-### `getNFTDriveData(txs: Array): Promise<{ header: object, data: string }>`
+- `getNFTDriveData(txs: Array): Promise<{ header: object, data: string }>`
 
 Reconstruct NFTDrive-encoded data from an array of Symbol transactions.
 
