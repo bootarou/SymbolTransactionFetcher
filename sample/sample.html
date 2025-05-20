@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>SymbolFetcher Test</title>
+
+  <script src="bundle.min.js"></script>
+
+</head>
+
+<body>
+
+  <h1>SymbolFetcher</h1>
+  <p>Check the console for results.</p>
+
+
+  <script>
+
+
+    const fetcher = new SymbolTransactionFetcher(
+      [
+        "https://symbol-node1.example.com:3001",
+        "https://symbol-node2.example.com:3001",
+        "https://symbol-node3.example.com:3001"
+      ]
+    );
+
+
+    fetcher.getAllTransactions("NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A")
+      .then(transactions => {
+        console.log("Transactions:", transactions);
+      })
+      .catch(error => {
+        console.error("Error fetching transactions:", error);
+      });
+
+
+    fetcher.getAllTransactionsAggregate("NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A")
+      .then(transactions => {
+        console.log("Transactions:", transactions);
+      })
+      .catch(error => {
+        console.error("Error fetching transactions:", error);
+      });
+
+
+
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="bundle.min.js"></script>
+</head>
+
+<head>
+
+    <style>
+        .accordion {
+            background-color: #eee;
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .accordion.active,
+        .accordion:hover {
+            background-color: #ccc;
+        }
+
+        .panel {
+            padding: 10px;
+            display: none;
+            background-color: white;
+            border: 1px solid #ccc;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .form-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            margin: 20px;
+            align-items: center;
+        }
+
+        #address {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            width: 500px;
+        }
+
+        #address:focus {
+            border-color: #3f51b5;
+            box-shadow: 0 0 5px rgba(63, 81, 181, 0.3);
+        }
+
+        #getTransactionAll {
+            padding: 10px 16px;
+            font-size: 16px;
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #getTransactionAll:hover {
+            background-color: #303f9f;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3f51b5;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+<body>
+    <h1>GetNFTDriveData</h1>
+    <input type="text" id="address" placeholder="Enter address" value="NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A" />
+    <button id="getTransactionAll">Get</button>
+
+
+    <div id="result"></div>
+
+
+    <div id="accordion-container"></div>
+
+    <div id="preview">
+        <img id="preview-image" src="" alt="">
+    </div>
+    <script>
+
+        const NODELIST = [
+            "https://symbol-node1.example.com:3001",
+            "https://symbol-node2.example.com:3001",
+            "https://symbol-node3.example.com:3001"
+
+        ];
+
+        const fetcher = new SymbolTransactionFetcher(NODELIST);
+
+
+        document.getElementById('getTransactionAll').addEventListener('click', function () {
+            //previewにローディング画面を表示
+            document.getElementById('preview').innerHTML = `<br />
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 120px;">
+              <div class="loader"></div>
+              <p>Loading...</p>
+              </div>`;
+
+
+            const address = document.getElementById('address').value;
+            fetcher.getAllTransactionsAggregate(address)
+                .then(async (allTxs) => {
+                    await fetcher.fetchTransactionsByHashes(allTxs)
+                        .then(async (result) => {
+                            await fetcher.getNFTDriveData(result)
+                                .then(async (sortedAggTxes) => {
+
+                                    renderAccordionFromObject(sortedAggTxes);
+                                    base64Preview(sortedAggTxes.header, sortedAggTxes.data, document.getElementById('preview'));
+
+                                })
+                                .catch(err => {
+                                    console.error("NFTDriveData生成エラー:", err);
+                                });
+                        })
+                        .catch(err => {
+                            console.error("ハッシュからトランザクション取得エラー:", err);
+                        });
+                })
+                .catch(err => {
+                    console.error("アドレスからアグリゲートトランザクション取得エラー:", err);
+                });
+        });
+
+
+
+
+
+
+        // アコーディオンの表示
+        function renderAccordionFromObject(obj, containerId = 'accordion-container') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // 初期化
+
+            Object.keys(obj).forEach(key => {
+                // アコーディオンボタン
+                const btn = document.createElement('button');
+                btn.className = 'accordion';
+                btn.textContent = key;
+
+                // コンテンツパネル
+                const panel = document.createElement('div');
+                panel.className = 'panel';
+                panel.textContent = typeof obj[key] === 'object'
+                    ? JSON.stringify(obj[key], null, 2)
+                    : String(obj[key]);
+
+                // トグル処理
+                btn.addEventListener('click', () => {
+                    panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+                    btn.classList.toggle('active');
+                });
+
+                container.appendChild(btn);
+                container.appendChild(panel);
+            });
+        }
+
+        let TextDecoderClass;
+
+        // Node.js 環境では `util.TextDecoder` を使用
+        if (typeof window === 'undefined') {
+            const { TextDecoder } = require('util');
+            TextDecoderClass = TextDecoder;
+        } else {
+            TextDecoderClass = TextDecoder;
+        }
+
+
+        // 16進数メッセージをデコードする関数
+        function decodeHexMessage(hex) {
+            if (!hex || hex.length < 2) return '';
+            const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+            const decoder = new TextDecoderClass('utf-8');
+            // 先頭1バイトはメッセージタイプなので除外
+            let decoded = decoder.decode(bytes.subarray(1))
+            // 文字列の最初と最後の空白を削除
+            return decoded;
+        }
+
+
+
+        // Base64プレビュー関数
+        function base64Preview(header, base64Data, containerElement) {
+
+            // 例：base64Data が data:image/png;base64,... の形式
+            const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
+            if (!match) {
+                console.error("MIMEとBase64の分離に失敗しました");
+                return;
+            }
+
+            const mimeType = match[1];
+            let base64 = sanitizeBase64(match[2]);
+
+            let binaryData;
+            try {
+                binaryData = atob(base64);
+            } catch (e) {
+                console.error("Base64 decode に失敗:", e.message);
+                return;
+            }
+
+
+            // Base64データをUint8Arrayに変換
+
+            const byteArray = new Uint8Array(binaryData.length);
+            for (let i = 0; i < binaryData.length; i++) {
+                byteArray[i] = binaryData.charCodeAt(i);
+            }
+
+            const blob = new Blob([byteArray], { type: mimeType });
+            const blobURL = URL.createObjectURL(blob);
+
+            console.log("MIME:", mimeType);
+
+            containerElement.innerHTML = "";
+
+            let element;
+            switch (mimeType) {
+                case "image/png":
+                case "image/jpeg":
+                case "image/gif":
+                case "image/webp":
+                    element = document.createElement("img");
+                    element.src = blobURL;
+                    element.alt = "画像プレビュー";
+                    element.style.maxWidth = "100%";
+                    break;
+
+                case "video/mp4":
+                case "video/webm":
+                    element = document.createElement("video");
+                    element.src = blobURL;
+                    element.controls = true;
+                    element.style.maxWidth = "100%";
+                    break;
+
+                case "audio/mpeg":
+                case "audio/wav":
+                case "audio/ogg":
+                    element = document.createElement("audio");
+                    element.src = blobURL;
+                    element.controls = true;
+                    break;
+
+                case "application/pdf":
+                    element = document.createElement("iframe");
+                    element.src = blobURL;
+                    element.style.width = "100%";
+                    element.style.height = "600px";
+                    break;
+
+                default:
+                    element = document.createElement("p");
+                    element.textContent = `対応していないMIMEタイプ: ${mimeType}`;
+                    break;
+            }
+
+            containerElement.appendChild(element);
+        }
+
+
+        // Base64の不正文字を除去し、4の倍数にする
+        function sanitizeBase64(base64) {
+            base64 = base64.replace(/[^A-Za-z0-9+/=]/g, ''); // 不正文字除去
+            while (base64.length % 4 !== 0) {
+                base64 += '=';
+            }
+            return base64;
+        }
+
+    </script>
+
+</body>
+
+</html>
