@@ -19,14 +19,15 @@
 
     const fetcher = new SymbolTransactionFetcher(
       [
-        "https://symbol-node1.example.com:3001",
-        "https://symbol-node2.example.com:3001",
-        "https://symbol-node3.example.com:3001"
+           "https://201-sai-dual.symboltest.net:3001",
+            "https://testnet1.symbol-mikun.net:3001",
+            "https://testnet2.symbol-mikun.net:3001",
+            "https://sym-test-03.opening-line.jp:3001"
       ]
     );
 
 
-    fetcher.getAllTransactions("NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A")
+    fetcher.getAllTransactions("TD4XTA562FNJ7ZZIXCEWGAMRWIJFQWDPOCAWZDI")
       .then(transactions => {
         console.log("Transactions:", transactions);
       })
@@ -35,7 +36,7 @@
       });
 
 
-    fetcher.getAllTransactionsAggregate("NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A")
+    fetcher.getAllTransactionsAggregate("TD4XTA562FNJ7ZZIXCEWGAMRWIJFQWDPOCAWZDI")
       .then(transactions => {
         console.log("Transactions:", transactions);
       })

@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 NFTDrive
+
 /**
  * Symbolブロックチェーンのトランザクション履歴取得クラス（ノード数に応じた並列取得対応）
  */
-
-const { TextDecoder } = require('util');
 class SymbolTransactionFetcher {
     /**
      * @param {string[]} nodes - SymbolノードのURL配列
@@ -10,7 +11,6 @@ class SymbolTransactionFetcher {
     constructor(nodes) {
         this.nodes = nodes;
         this.nodeCount = nodes.length;
-        this.TextDecoderClass = TextDecoder; // ← ここでセット
     }
 
     /**
@@ -130,6 +130,7 @@ class SymbolTransactionFetcher {
     /**
      * 複数ノードでトランザクションハッシュ配列を高速取得する関数
      * @param {Array} hashes - 取得したいトランザクションハッシュの配列（複数可）
+     * @param {Array} nodes - SymbolノードのURL配列
      * @returns {Promise<Array>} 取得できたトランザクション情報の配列
      */
     async fetchTransactionsByHashes(hashes) {
@@ -156,6 +157,7 @@ class SymbolTransactionFetcher {
         }
         return results;
     }
+
 
     /**
      * トランザクションのメッセージをデコードし、NFTDrive用データを組み立てる
@@ -254,7 +256,7 @@ class SymbolTransactionFetcher {
             if (match) {
                 isMimeFormat = true;
                 mergedMessageObj.header.mimeType = match[1];
-                
+
                 // ヘッダー情報を設定
                 mergedMessageObj.header.id = uniqueAggTxes[0][2]?.transaction?.message || "";
                 mergedMessageObj.header.serial = uniqueAggTxes[0][3]?.transaction?.message || "";
@@ -298,10 +300,10 @@ class SymbolTransactionFetcher {
         // パターン2: インデックス15が暗号化されたBase64データの場合
         if (!isMimeFormat) {
             console.log("インデックス15がMIME形式ではありません。暗号化データとして処理します。");
-            
+
             // MIMEタイプをテキストに設定
             mergedMessageObj.header.mimeType = "text/plain";
-            
+
             // インデックス15以降のデータのみを結合（ヘッダーは含めない）
             for (let i = 0; i < uniqueAggTxes.length; i++) {
                 for (let j = 0; j < uniqueAggTxes[i].length; j++) {
@@ -340,7 +342,6 @@ class SymbolTransactionFetcher {
         return new TextEncoder().encode(str).length;
     }
 
-
     /**
      * メッセージをデコードする関数
      * @param {string} hex - 16進数文字列
@@ -356,6 +357,9 @@ class SymbolTransactionFetcher {
         return decoded.trim();
     }
 
+
+
 }
+
 
 export default SymbolTransactionFetcher;

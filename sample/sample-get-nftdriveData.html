@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>NFTDriveData</title>
     <script src="bundle.min.js"></script>
+    <script src="aes.js"></script>
 </head>
 
 <head>
-
     <style>
         .accordion {
             background-color: #eee;
@@ -37,45 +37,6 @@
             word-wrap: break-word;
         }
 
-        .form-wrapper {
-            display: flex;
-            flex-direction: row;
-            gap: 10px;
-            margin: 20px;
-            align-items: center;
-        }
-
-        #address {
-            flex: 1;
-            padding: 10px 14px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            outline: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            width: 500px;
-        }
-
-        #address:focus {
-            border-color: #3f51b5;
-            box-shadow: 0 0 5px rgba(63, 81, 181, 0.3);
-        }
-
-        #getTransactionAll {
-            padding: 10px 16px;
-            font-size: 16px;
-            background-color: #3f51b5;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        #getTransactionAll:hover {
-            background-color: #303f9f;
-        }
-
         .loader {
             border: 8px solid #f3f3f3;
             border-top: 8px solid #3f51b5;
@@ -95,54 +56,151 @@
                 transform: rotate(360deg);
             }
         }
+
+        .preview {
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            max-width: calc(100% - 40px);
+            max-height: calc(100vh - 100px);
+            overflow: auto;
+        }
+
+        .preview img {
+            max-width: 100%;
+            max-height: calc(100vh - 150px);
+            height: auto;
+            width: auto;
+            display: block;
+            object-fit: contain;
+            cursor: zoom-in;
+            transition: transform 0.2s ease;
+        }
+
+        .preview img.zoomed {
+            cursor: zoom-out;
+        }
+
+        .zoom-container {
+            position: relative;
+            display: inline-block;
+            overflow: auto;
+            max-width: 100%;
+            max-height: calc(100vh - 150px);
+            user-select: none;
+        }
+
+        .zoom-container img {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .preview video,
+        .preview audio {
+            max-width: 100%;
+            display: block;
+        }
+
+        .preview iframe {
+            max-width: 100%;
+            display: block;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
     </style>
+</head>
 
 <body>
-    <h1>GetNFTDriveData</h1>
-    <input type="text" id="address" placeholder="Enter address" value="NBDFBLQZAHNCET2XYXD54TLXCCBBJQMLKATCT6A" />
-    <button id="getTransactionAll">Get</button>
-
-
-    <div id="result"></div>
-
-
-    <div id="accordion-container"></div>
-
-    <div id="preview">
-        <img id="preview-image" src="" alt="">
+    <div>
+        <!-- <h1>NFTDriveData</h1> -->
+        <div id="preview" class="preview"></div>
+        <div id="result"></div>
+        <div id="accordion-container"></div>
     </div>
+
     <script>
+        const NODELIST = {
+            mainnet: [
+                "https://sn1.msus-symbol.com:3001",
+                "https://ichigo-node.xyz:3001",
+                "https://0-0-0-0.symbol-nodes.jp:3001",
+                "https://01.symbol-node.com:3001",
+                "https://03.symbol-node.com:3001",
+                "https://symbol-node.teritaris.net:3001",
+                "https://symbol-no:3001"
+            ],
+            testnet: [
+                "https://201-sai-dual.symboltest.net:3001",
+                "https://testnet1.symbol-mikun.net:3001",
+                "https://testnet2.symbol-mikun.net:3001",
+                "https://sym-test-03.opening-line.jp:3001"
+            ]
+        }
 
-        const NODELIST = [
-            "https://symbol-node1.example.com:3001",
-            "https://symbol-node2.example.com:3001",
-            "https://symbol-node3.example.com:3001"
+        // アドレスからネットワークを判定する関数
+        function getNetworkFromAddress(address) {
+            if (!address || address.length === 0) return 'mainnet';
+            const firstChar = address.charAt(0).toUpperCase();
+            return firstChar === 'N' ? 'mainnet' : 'testnet';
+        }
 
-        ];
+        // ネットワークに応じたフェッチャーを初期化
+        let fetcher;
 
-        const fetcher = new SymbolTransactionFetcher(NODELIST);
+        function initializeFetcher(address) {
+            const network = getNetworkFromAddress(address);
+            console.log("ネットワーク:", network);
+            fetcher = new SymbolTransactionFetcher(NODELIST[network]);
+        }
 
+        // URLのGETパラメータからaddressを取得する関数
+        function getAddressFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('address');
+        }
 
-        document.getElementById('getTransactionAll').addEventListener('click', function () {
-            //previewにローディング画面を表示
+        // NFTDriveDataを取得して表示する処理
+        function fetchAndDisplayNFTDriveData(address) {
+            if (!address) {
+                console.error("アドレスが指定されていません");
+                return;
+            }
+
+            // ネットワークに応じてフェッチャーを初期化
+            initializeFetcher(address);
+
+            // previewにローディング画面を表示
             document.getElementById('preview').innerHTML = `<br />
               <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 120px;">
               <div class="loader"></div>
               <p>Loading...</p>
               </div>`;
 
-
-            const address = document.getElementById('address').value;
             fetcher.getAllTransactionsAggregate(address)
                 .then(async (allTxs) => {
                     await fetcher.fetchTransactionsByHashes(allTxs)
                         .then(async (result) => {
                             await fetcher.getNFTDriveData(result)
                                 .then(async (sortedAggTxes) => {
-
                                     renderAccordionFromObject(sortedAggTxes);
                                     base64Preview(sortedAggTxes.header, sortedAggTxes.data, document.getElementById('preview'));
-
                                 })
                                 .catch(err => {
                                     console.error("NFTDriveData生成エラー:", err);
@@ -155,17 +213,31 @@
                 .catch(err => {
                     console.error("アドレスからアグリゲートトランザクション取得エラー:", err);
                 });
+        }
+
+        // ページロード時にGETパラメータをチェック
+        window.addEventListener('DOMContentLoaded', function () {
+            let addressFromURL = getAddressFromURL();
+
+            // GETパラメータがない場合、プロンプトで入力
+            if (!addressFromURL) {
+                addressFromURL = prompt("NFTDriveデータを取得するアドレスを入力してください：");
+                if (!addressFromURL) {
+                    console.log("ユーザーがキャンセルしました");
+                    document.getElementById('preview').innerHTML = `<p style="color: blue;">アドレスが入力されませんでした。</p>`;
+                    return;
+                }
+            }
+
+            console.log("アドレス:", addressFromURL);
+            // 自動的にデータ取得を実行
+            fetchAndDisplayNFTDriveData(addressFromURL);
         });
-
-
-
-
-
 
         // アコーディオンの表示
         function renderAccordionFromObject(obj, containerId = 'accordion-container') {
             const container = document.getElementById(containerId);
-            container.innerHTML = ''; // 初期化
+            container.innerHTML = '';
 
             Object.keys(obj).forEach(key => {
                 // アコーディオンボタン
@@ -218,27 +290,77 @@
         // Base64プレビュー関数
         function base64Preview(header, base64Data, containerElement) {
 
-            // 例：base64Data が data:image/png;base64,... の形式
-            const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
-            if (!match) {
-                console.error("MIMEとBase64の分離に失敗しました");
+            // 暗号化データかどうかを判定（Salt付きBase64の特徴：U2FsdGVkX1で始まる）
+            const isEncrypted = base64Data.startsWith('U2FsdGVkX1');
+
+            if (isEncrypted) {
+                console.log("暗号化データが検出されました。パスワードを入力してください。");
+                handleEncryptedData(base64Data, containerElement);
                 return;
             }
 
-            const mimeType = match[1];
-            let base64 = sanitizeBase64(match[2]);
+            // 通常のBase64処理
+            const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
+            if (!match) {
+                console.error("MIMEとBase64の分離に失敗しました");
+                containerElement.innerHTML = `<p style="color: red;">エラー：有効なBase64データが見つかりません</p>`;
+                return;
+            }
+
+            renderPreview(match[1], match[2], containerElement);
+        }
+
+        // 暗号化データを処理する関数
+        function handleEncryptedData(encryptedBase64, containerElement) {
+            const password = prompt("このNFTDriveデータは暗号化されています。\nパスワードを入力してください：");
+
+            if (password === null) {
+                console.log("ユーザーがキャンセルしました");
+                containerElement.innerHTML = `<p style="color: blue;">データの復号化がキャンセルされました。</p>`;
+                return;
+            }
+
+            try {
+                // CryptoJS.AES.decryptを使用して復号化
+                const decrypted = CryptoJS.AES.decrypt(encryptedBase64, password);
+                const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+
+                if (!decryptedString) {
+                    throw new Error("復号化に失敗しました。パスワードが正しくない可能性があります。");
+                }
+
+                console.log("復号化成功:", decryptedString.substring(0, 100));
+
+                // 復号化されたデータがBase64形式かどうかを判定
+                const match = decryptedString.match(/^data:([^;]+);base64,(.*)$/);
+                if (!match) {
+                    // 復号化されたデータがそのままBase64の場合
+                    renderPreview("application/octet-stream", decryptedString, containerElement);
+                } else {
+                    // MIMEタイプ付きの場合
+                    renderPreview(match[1], match[2], containerElement);
+                }
+
+            } catch (error) {
+                console.error("復号化エラー:", error.message);
+                containerElement.innerHTML = `<p style="color: red;">エラー：${error.message}</p>`;
+            }
+        }
+
+        // プレビュー表示の共通処理
+        function renderPreview(mimeType, base64Data, containerElement) {
+            let base64 = sanitizeBase64(base64Data);
 
             let binaryData;
             try {
                 binaryData = atob(base64);
             } catch (e) {
                 console.error("Base64 decode に失敗:", e.message);
+                containerElement.innerHTML = `<p style="color: red;">エラー：Base64デコード失敗 - ${e.message}</p>`;
                 return;
             }
 
-
             // Base64データをUint8Arrayに変換
-
             const byteArray = new Uint8Array(binaryData.length);
             for (let i = 0; i < binaryData.length; i++) {
                 byteArray[i] = binaryData.charCodeAt(i);
@@ -253,15 +375,157 @@
 
             let element;
             switch (mimeType) {
+
                 case "image/png":
                 case "image/jpeg":
                 case "image/gif":
                 case "image/webp":
+                    const zoomContainer = document.createElement("div");
+                    zoomContainer.className = "zoom-container";
+
                     element = document.createElement("img");
                     element.src = blobURL;
                     element.alt = "画像プレビュー";
                     element.style.maxWidth = "100%";
-                    break;
+                    element.style.maxHeight = "calc(100vh - 150px)";
+                    element.style.height = "auto";
+                    element.style.width = "auto";
+                    element.style.display = "block";
+                    element.style.objectFit = "contain";
+                    element.style.userSelect = "none";
+                    element.style.webkitUserSelect = "none";
+                    element.draggable = false;
+
+                    let scale = 1;
+                    const maxScale = 5; // 最大5倍までズーム
+                    let isDragging = false;
+                    let startX = 0;
+                    let startY = 0;
+                    let scrollLeft = 0;
+                    let scrollTop = 0;
+
+                    // マウスホイールでズーム
+                    element.addEventListener('wheel', (e) => {
+                        if (!e.ctrlKey) {
+                            e.preventDefault();
+                            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                            scale = Math.max(1, Math.min(maxScale, scale + delta));
+                            element.style.transform = `scale(${scale})`;
+                            element.style.transformOrigin = "center center";
+
+                            if (scale > 1) {
+                                element.classList.add('zoomed');
+                                zoomContainer.style.overflow = "auto";
+                            } else {
+                                element.classList.remove('zoomed');
+                                zoomContainer.style.overflow = "auto";
+                            }
+                        }
+                    }, { passive: false });
+
+                    // ダブルクリックでズームリセット
+                    element.addEventListener('dblclick', () => {
+                        scale = 1;
+                        element.style.transform = `scale(${scale})`;
+                        element.classList.remove('zoomed');
+                        zoomContainer.scrollLeft = 0;
+                        zoomContainer.scrollTop = 0;
+                    });
+
+                    // マウスダウンでドラッグ開始
+                    element.addEventListener('mousedown', (e) => {
+                        if (scale > 1 && e.button === 0) { // 左クリックのみ
+                            isDragging = true;
+                            startX = e.clientX;
+                            startY = e.clientY;
+                            scrollLeft = zoomContainer.scrollLeft;
+                            scrollTop = zoomContainer.scrollTop;
+                            element.style.cursor = "grabbing";
+                            e.preventDefault();
+                        }
+                    });
+
+                    // マウスムーブでスクロール
+                    const handleMouseMove = (e) => {
+                        if (!isDragging) return;
+
+                        const x = e.clientX;
+                        const y = e.clientY;
+                        const walkX = (x - startX) * 1.5; // スクロール感度調整
+                        const walkY = (y - startY) * 1.5;
+
+                        zoomContainer.scrollLeft = scrollLeft - walkX;
+                        zoomContainer.scrollTop = scrollTop - walkY;
+                    };
+
+                    // マウスアップでドラッグ終了
+                    const handleMouseUp = () => {
+                        isDragging = false;
+                        element.style.cursor = scale > 1 ? "grab" : "zoom-in";
+                    };
+
+                    // グローバルリスナーを登録
+                    document.addEventListener('mousemove', handleMouseMove, false);
+                    document.addEventListener('mouseup', handleMouseUp, false);
+
+                    // ズームされていない時はデフォルトカーソル
+                    element.addEventListener('mouseover', () => {
+                        if (scale > 1) {
+                            element.style.cursor = "grab";
+                        } else {
+                            element.style.cursor = "zoom-in";
+                        }
+                    });
+
+                    element.addEventListener('mouseleave', () => {
+                        if (!isDragging) {
+                            element.style.cursor = "default";
+                        }
+                    });
+
+                    // ドラッグ中のテキスト選択を防止
+                    element.addEventListener('selectstart', (e) => {
+                        if (isDragging) {
+                            e.preventDefault();
+                        }
+                    });
+
+                    // タッチデバイス用ピンチズーム
+                    let lastDistance = 0;
+                    element.addEventListener('touchmove', (e) => {
+                        if (e.touches.length === 2) {
+                            e.preventDefault();
+                            const touch1 = e.touches[0];
+                            const touch2 = e.touches[1];
+                            const distance = Math.hypot(
+                                touch2.clientX - touch1.clientX,
+                                touch2.clientY - touch1.clientY
+                            );
+
+                            if (lastDistance > 0) {
+                                const ratio = distance / lastDistance;
+                                scale = Math.max(1, Math.min(maxScale, scale * ratio));
+                                element.style.transform = `scale(${scale})`;
+                                element.style.transformOrigin = "center center";
+
+                                if (scale > 1) {
+                                    element.classList.add('zoomed');
+                                } else {
+                                    element.classList.remove('zoomed');
+                                }
+                            }
+                            lastDistance = distance;
+                        }
+                    }, { passive: false });
+
+                    element.addEventListener('touchend', () => {
+                        lastDistance = 0;
+                    });
+
+                    zoomContainer.appendChild(element);
+                    containerElement.appendChild(zoomContainer);
+                    return;
+
 
                 case "video/mp4":
                 case "video/webm":
@@ -269,6 +533,8 @@
                     element.src = blobURL;
                     element.controls = true;
                     element.style.maxWidth = "100%";
+                    element.style.height = "auto";
+                    element.style.display = "block";
                     break;
 
                 case "audio/mpeg":
@@ -277,13 +543,39 @@
                     element = document.createElement("audio");
                     element.src = blobURL;
                     element.controls = true;
+                    element.style.maxWidth = "100%";
+                    element.style.display = "block";
                     break;
 
                 case "application/pdf":
                     element = document.createElement("iframe");
                     element.src = blobURL;
                     element.style.width = "100%";
-                    element.style.height = "600px";
+                    element.style.height = "100vh";
+                    element.style.minHeight = "100vh";
+                    element.style.border = "none";
+                    element.style.display = "block";
+                    element.onload = function () {
+                        // iframeが読み込まれたら高さを調整
+                        try {
+                            const iframeDoc = element.contentDocument || element.contentWindow.document;
+                            if (iframeDoc && iframeDoc.body) {
+                                const scrollHeight = iframeDoc.body.scrollHeight;
+                                element.style.height = (scrollHeight + 20) + "px";
+                            }
+                        } catch (e) {
+                            console.warn("iframeの高さ調整に失敗（クロスオリジンの可能性）:", e);
+                            element.style.height = "100vh";
+                        }
+                    };
+                    break;
+
+                case "text/plain":
+                    element = document.createElement("p");
+                    element.textContent = `暗号化データ:\n${base64Data.substring(0, 200)}...`;
+                    element.style.whiteSpace = "pre-wrap";
+                    element.style.wordWrap = "break-word";
+                    element.style.maxWidth = "100%";
                     break;
 
                 default:
@@ -293,10 +585,7 @@
             }
 
             containerElement.appendChild(element);
-        }
-
-
-        // Base64の不正文字を除去し、4の倍数にする
+        }  // Base64の不正文字を除去し、4の倍数にする
         function sanitizeBase64(base64) {
             base64 = base64.replace(/[^A-Za-z0-9+/=]/g, ''); // 不正文字除去
             while (base64.length % 4 !== 0) {
@@ -304,9 +593,7 @@
             }
             return base64;
         }
-
     </script>
-
 </body>
 
 </html>
