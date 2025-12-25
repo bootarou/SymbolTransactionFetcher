@@ -44,7 +44,69 @@
             width: 48px;
             height: 48px;
             animation: spin 1s linear infinite;
-            margin-bottom: 10px;
+            margin: 0 auto 10px auto;
+        }
+
+        .progress-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 30px;
+            background-color: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin: 10px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3f51b5, #5c6bc0);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .progress-message {
+            text-align: center;
+            margin-top: 10px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .progress-details {
+            text-align: center;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        #progressContainer {
+            display: none;
+        }
+
+        #progressContainer.show {
+            display: block;
         }
 
         @keyframes spin {
@@ -130,6 +192,14 @@
 <body>
     <div>
         <!-- <h1>NFTDriveData</h1> -->
+        <div id="progressContainer" class="progress-container">
+            <div class="loader"></div>
+            <div class="progress-bar-wrapper">
+                <div id="progressBar" class="progress-bar" style="width: 0%">0%</div>
+            </div>
+            <div id="progressMessage" class="progress-message">読み込み中...</div>
+            <div id="progressDetails" class="progress-details"></div>
+        </div>
         <div id="preview" class="preview"></div>
         <div id="result"></div>
         <div id="accordion-container"></div>
@@ -150,8 +220,23 @@
                 "https://201-sai-dual.symboltest.net:3001",
                 "https://testnet1.symbol-mikun.net:3001",
                 "https://testnet2.symbol-mikun.net:3001",
-                "https://sym-test-03.opening-line.jp:3001"
+                "https://sym-test-03.opening-line.jp:3001",
+                "https://001-sai-dual.symboltest.net:3001",
+                "https://vmi831828.contaboserver.net:3001",
+                "https://symbol-azure.0009.co:3001"
             ]
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array]; // コピーを作成
+
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                // 要素を交換
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            return shuffled;
         }
 
         // アドレスからネットワークを判定する関数
@@ -166,8 +251,8 @@
 
         function initializeFetcher(address) {
             const network = getNetworkFromAddress(address);
-            console.log("ネットワーク:", network);
-            fetcher = new SymbolTransactionFetcher(NODELIST[network]);
+            shuffleNode = shuffleArray(NODELIST[network]);
+            fetcher = new SymbolTransactionFetcher(shuffleNode);
         }
 
         // URLのGETパラメータからaddressを取得する関数
@@ -183,37 +268,74 @@
                 return;
             }
 
-            // ネットワークに応じてフェッチャーを初期化
             initializeFetcher(address);
 
-            // previewにローディング画面を表示
-            document.getElementById('preview').innerHTML = `<br />
-              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 120px;">
-              <div class="loader"></div>
-              <p>Loading...</p>
-              </div>`;
+            // プログレスバーを表示
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressMessage = document.getElementById('progressMessage');
+            const progressDetails = document.getElementById('progressDetails');
+            const preview = document.getElementById('preview');
 
-            fetcher.getAllTransactionsAggregate(address)
-                .then(async (allTxs) => {
-                    await fetcher.fetchTransactionsByHashes(allTxs)
-                        .then(async (result) => {
-                            await fetcher.getNFTDriveData(result)
-                                .then(async (sortedAggTxes) => {
-                                    renderAccordionFromObject(sortedAggTxes);
-                                    base64Preview(sortedAggTxes.header, sortedAggTxes.data, document.getElementById('preview'));
-                                })
-                                .catch(err => {
-                                    console.error("NFTDriveData生成エラー:", err);
-                                });
-                        })
-                        .catch(err => {
-                            console.error("ハッシュからトランザクション取得エラー:", err);
-                        });
-                })
-                .catch(err => {
-                    console.error("アドレスからアグリゲートトランザクション取得エラー:", err);
-                });
+            progressContainer.classList.add('show');
+            preview.innerHTML = '';
+
+            // プログレス監視タイマー
+            let progressTimer = setInterval(() => {
+                const progress = fetcher.getProgress();
+                
+                // プログレスバーを更新
+                progressBar.style.width = progress.percentage + '%';
+                progressBar.textContent = progress.percentage + '%';
+                progressMessage.textContent = progress.message || '読み込み中...';
+                
+                if (progress.details && progress.details.total > 0) {
+                    progressDetails.textContent = `${progress.details.fetched} / ${progress.details.total} 件取得済み`;
+                }
+            }, 100);
+
+            fetcher.fetchAllAggregatesStable(address,  {
+                indexNodeIndex: 0,
+                indexPageSize: 100,
+                indexTypes :[16705], // 必要なら [16705, 16961]
+                concurrency:2,
+                retries:3
+            }).then(async (result) => {
+
+                await fetcher.getNFTDriveData(result, { debugger: true })
+                    .then(async (sortedAggTxes) => {
+
+                        // データ表示
+                        renderAccordionFromObject(sortedAggTxes);
+                        base64Preview(sortedAggTxes.header, sortedAggTxes.data, document.getElementById('preview'));
+
+                        // プログレス完了
+                        clearInterval(progressTimer);
+                        setTimeout(() => {
+                            progressContainer.classList.remove('show');
+                        }, 500);
+
+                        // デバッグモード時に欠損トランザクション分析を表示
+                        if (sortedAggTxes.debugInfo.lostCount > 0) {
+                            sortedAggTxes.debugInfo.aggregateTransactions = result;
+                            displayLostTransactionAnalysis(sortedAggTxes.debugInfo);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("NFTDriveData生成エラー:", err);
+                        clearInterval(progressTimer);
+                        progressContainer.classList.remove('show');
+                        preview.innerHTML = '<p style="color: red;">データ取得エラーが発生しました</p>';
+                    });
+            }).catch(err => {
+                console.error("安定版アグリゲートトランザクション取得エラー:", err);
+                clearInterval(progressTimer);
+                progressContainer.classList.remove('show');
+                preview.innerHTML = '<p style="color: red;">トランザクション取得エラーが発生しました</p>';
+            });
+
         }
+
 
         // ページロード時にGETパラメータをチェック
         window.addEventListener('DOMContentLoaded', function () {
@@ -223,15 +345,13 @@
             if (!addressFromURL) {
                 addressFromURL = prompt("NFTDriveデータを取得するアドレスを入力してください：");
                 if (!addressFromURL) {
-                    console.log("ユーザーがキャンセルしました");
                     document.getElementById('preview').innerHTML = `<p style="color: blue;">アドレスが入力されませんでした。</p>`;
                     return;
                 }
             }
-
-            console.log("アドレス:", addressFromURL);
             // 自動的にデータ取得を実行
             fetchAndDisplayNFTDriveData(addressFromURL);
+
         });
 
         // アコーディオンの表示
@@ -290,6 +410,15 @@
         // Base64プレビュー関数
         function base64Preview(header, base64Data, containerElement) {
 
+            // デバッグ情報をログ出力
+            console.log("=== base64Preview デバッグ情報 ===");
+            console.log("ヘッダー:", header);
+            console.log("Base64データ長:", base64Data.length);
+            console.log("Base64データ先頭200文字:", base64Data.substring(0, 200));
+            console.log("Base64データ末尾200文字:", base64Data.substring(Math.max(0, base64Data.length - 200)));
+
+
+
             // 暗号化データかどうかを判定（Salt付きBase64の特徴：U2FsdGVkX1で始まる）
             const isEncrypted = base64Data.startsWith('U2FsdGVkX1');
 
@@ -299,11 +428,34 @@
                 return;
             }
 
+
+
+            // JSON Base64の判定と処理
+            if (base64Data.startsWith('eyJ')) {
+                try {
+                    const jsonString = atob(base64Data);
+                    const jsonData = JSON.parse(jsonString);
+
+                    const container = document.createElement("div");
+                    container.style.padding = "15px";
+                    container.style.backgroundColor = "#f5f5f5";
+                    container.style.borderRadius = "5px";
+                    container.style.whiteSpace = "pre-wrap";
+                    container.style.wordWrap = "break-word";
+                    container.textContent = JSON.stringify(jsonData, null, 2);
+                    containerElement.appendChild(container);
+                    return;
+                } catch (e) {
+                    console.error("JSON パース失敗:", e.message);
+                }
+            }
+
+
             // 通常のBase64処理
             const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
             if (!match) {
-                console.error("MIMEとBase64の分離に失敗しました");
-                containerElement.innerHTML = `<p style="color: red;">エラー：有効なBase64データが見つかりません</p>`;
+                containerElement.innerHTML = `<p style="color: red;">エラー：有効なBase64データが見つかりません<br/>
+                データ先頭: ${base64Data.substring(0, 100)}</p>`;
                 return;
             }
 
@@ -315,7 +467,6 @@
             const password = prompt("このNFTDriveデータは暗号化されています。\nパスワードを入力してください：");
 
             if (password === null) {
-                console.log("ユーザーがキャンセルしました");
                 containerElement.innerHTML = `<p style="color: blue;">データの復号化がキャンセルされました。</p>`;
                 return;
             }
@@ -328,8 +479,6 @@
                 if (!decryptedString) {
                     throw new Error("復号化に失敗しました。パスワードが正しくない可能性があります。");
                 }
-
-                console.log("復号化成功:", decryptedString.substring(0, 100));
 
                 // 復号化されたデータがBase64形式かどうかを判定
                 const match = decryptedString.match(/^data:([^;]+);base64,(.*)$/);
@@ -349,14 +498,42 @@
 
         // プレビュー表示の共通処理
         function renderPreview(mimeType, base64Data, containerElement) {
-            let base64 = sanitizeBase64(base64Data);
+            let base64 = base64Data;
+
+            // Base64が空の場合
+            if (!base64 || base64.length === 0) {
+                console.error("Base64データが空です");
+                containerElement.innerHTML = `<p style="color: red;">エラー：Base64データが空です</p>`;
+                return;
+            }
+
+            console.log("renderPreview前:", "長さ", base64.length, "% 4 =", base64.length % 4);
+
 
             let binaryData;
             try {
+                console.log("atob実行前:", "長さ", base64.length, "末尾", base64.substring(base64.length - 5));
                 binaryData = atob(base64);
+                console.log("✓ atob成功:", "バイナリ長", binaryData.length);
             } catch (e) {
-                console.error("Base64 decode に失敗:", e.message);
-                containerElement.innerHTML = `<p style="color: red;">エラー：Base64デコード失敗 - ${e.message}</p>`;
+                console.error("❌ Base64 decode に失敗:", e.message);
+                console.error("  Base64データ長:", base64.length);
+                console.error("  長さ % 4:", base64.length % 4);
+                console.error("  末尾20文字:", base64.substring(base64.length - 20));
+                console.error("  先頭100文字:", base64.substring(0, 100));
+
+                containerElement.innerHTML = `<p style="color: red;">エラー：Base64デコード失敗<br/>
+                形式: ${mimeType}<br/>
+                データ長: ${base64.length}<br/>
+                詳細: ${e.message}</p>`;
+                return;
+            }
+
+
+            // バイナリデータが空の場合
+            if (!binaryData || binaryData.length === 0) {
+                console.error("デコード後のバイナリデータが空です");
+                containerElement.innerHTML = `<p style="color: red;">エラー：デコード後のデータが空です</p>`;
                 return;
             }
 
@@ -366,10 +543,20 @@
                 byteArray[i] = binaryData.charCodeAt(i);
             }
 
+
+
+
+            // // ★ WAV ファイルの場合、メタデータを解析
+            // if (mimeType === 'audio/wav') {
+            //     const wavMetadata = analyzeWAVMetadata(byteArray);
+            //     displayWAVAnalysis(wavMetadata);
+            // }
+
+
             const blob = new Blob([byteArray], { type: mimeType });
             const blobURL = URL.createObjectURL(blob);
 
-            console.log("MIME:", mimeType);
+            console.log("✓ MIME:", mimeType, "データ長:", byteArray.length);
 
             containerElement.innerHTML = "";
 
@@ -547,6 +734,9 @@
                     element.style.display = "block";
                     break;
 
+
+
+
                 case "application/pdf":
                     element = document.createElement("iframe");
                     element.src = blobURL;
@@ -570,12 +760,79 @@
                     };
                     break;
 
+
                 case "text/plain":
-                    element = document.createElement("p");
-                    element.textContent = `暗号化データ:\n${base64Data.substring(0, 200)}...`;
-                    element.style.whiteSpace = "pre-wrap";
-                    element.style.wordWrap = "break-word";
-                    element.style.maxWidth = "100%";
+                    // ★ text/plainの場合、まずBase64をテキストにデコード
+                    let plainTextContent = '';
+                    try {
+                        // Base64 → バイナリに変換
+                        const binaryString = atob(base64Data);
+
+                        // ★ バイナリ → UTF-8テキストに変換（文字化け対策）
+                        const uint8Array = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) {
+                            uint8Array[i] = binaryString.charCodeAt(i);
+                        }
+                        const decoder = new TextDecoder('utf-8');
+                        plainTextContent = decoder.decode(uint8Array);
+
+                        console.log("✓ Base64デコード成功:", plainTextContent.substring(0, 100));
+                    } catch (e) {
+                        console.error("Base64デコード失敗:", e.message);
+                        element = document.createElement("p");
+                        element.style.color = "red";
+                        element.textContent = `エラー：Base64デコード失敗 - ${e.message}`;
+                        containerElement.appendChild(element);
+                        return;
+                    }
+
+                    // デコード後のテキストがJSONかどうかを判定
+                    try {
+                        const jsonData = JSON.parse(plainTextContent);
+
+                        // JSONパース成功 → JSON表示
+                        element = document.createElement("div");
+                        element.style.padding = "15px";
+                        element.style.backgroundColor = "#f5f5f5";
+                        element.style.borderRadius = "5px";
+                        element.style.whiteSpace = "pre-wrap";
+                        element.style.wordWrap = "break-word";
+                        element.style.fontFamily = "monospace";
+                        element.style.fontSize = "12px";
+                        element.style.maxHeight = "80vh";
+                        element.style.overflow = "auto";
+                        element.style.border = "1px solid #ddd";
+                        element.textContent = JSON.stringify(jsonData, null, 2);
+
+                        console.log("✓ JSON形式で表示します");
+                    } catch (e) {
+                        // JSONパース失敗 → プレーンテキスト表示
+                        element = document.createElement("div");
+                        element.style.padding = "15px";
+                        element.style.backgroundColor = "#f9f9f9";
+                        element.style.borderRadius = "5px";
+                        element.style.whiteSpace = "pre-wrap";
+                        element.style.wordWrap = "break-word";
+                        element.style.fontFamily = "monospace";
+                        element.style.fontSize = "12px";
+                        element.style.maxHeight = "80vh";
+                        element.style.overflow = "auto";
+                        element.style.border = "1px solid #ddd";
+                        element.textContent = plainTextContent;
+
+                        console.log("✓ プレーンテキスト形式で表示します");
+                    }
+                    break;
+
+                case "text/html":
+
+                    element = document.createElement("iframe");
+                    element.src = blobURL;
+                    element.style.width = "100%";
+                    element.style.height = "100vh";
+                    // element.style.minHeight = "100vh";
+                    element.style.border = "none";
+                    element.style.display = "block";
                     break;
 
                 default:
@@ -585,13 +842,521 @@
             }
 
             containerElement.appendChild(element);
-        }  // Base64の不正文字を除去し、4の倍数にする
+        }
+
+
+        // Base64の不正文字を除去し、4の倍数にする
         function sanitizeBase64(base64) {
-            base64 = base64.replace(/[^A-Za-z0-9+/=]/g, ''); // 不正文字除去
-            while (base64.length % 4 !== 0) {
-                base64 += '=';
-            }
+            // 前後の空白を削除
+            // base64 = base64.trim();
+            // base64 = base64.replace(/[\s\n\r\t]/g, '');
+            // base64 = base64.replace(/=+$/, '');
+
+
+            // console.log("✓ sanitizeBase64 処理後:");
+            // console.log("  処理後データ長:", base64.length);
+            // console.log("  長さ % 4:", base64.length % 4);
+            // console.log("  パディング:", (base64.match(/=+$/)?.[0] || 'なし'));
+            // console.log("  末尾10文字:", base64.substring(base64.length - 10));
+
+
+
             return base64;
+        }
+
+
+        // デバッグ用：データ解析ツール
+        async function analyzeNFTDriveData(address) {
+            initializeFetcher(address);
+
+            try {
+                const allTxs = await fetcher.getAllTransactionsAggregate(address);
+                const result = await fetcher.fetchTransactionsByHashes(allTxs);
+
+                // 解析実行
+                const analysis = fetcher.analyzNFTDriveData(result);
+
+                console.log("=== NFTDriveData 詳細解析 ===");
+                console.log(JSON.stringify(analysis, null, 2));
+
+                // HTMLに詳細結果を表示
+                document.getElementById('result').innerHTML = `<pre style="background: #f0f0f0; padding: 10px; overflow: auto; max-height: 400px;">${JSON.stringify(analysis, null, 2)}</pre>`;
+
+                return analysis;
+            } catch (error) {
+                console.error("解析エラー:", error);
+            }
+        }
+
+        function displayTransactionAnalysis(debugInfo) {
+            const { transactionContinuity } = debugInfo;
+            if (!transactionContinuity) return;
+
+            const {
+                transactionArrayCount,
+                messageNumbers,
+                missingMessages,
+                messageRange,
+                isComplete,
+                completenessPercentage
+            } = transactionContinuity;
+
+            let html = `<div style="background: ${isComplete ? '#d4edda' : '#fff3cd'}; border: 2px solid ${isComplete ? '#28a745' : '#ff9800'}; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
+            html += `<h3 style="color: ${isComplete ? '#155724' : '#ff6600'}; margin-top: 0;">${isComplete ? '✓' : '⚠'} トランザクション構造分析</h3>`;
+
+            html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">`;
+            html += `<tr style="background: ${isComplete ? '#c3e6cb' : '#ffe0b2'};">
+                <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">項目</th>
+                <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">値</th>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>Tx配列インデックス範囲</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">0 ～ ${transactionArrayCount - 1} (合計${transactionArrayCount}個)</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>メッセージ番号範囲</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${messageRange.min} ～ ${messageRange.max}</td>
+            </tr>`;
+
+            const expectedMsg = messageRange.max - messageRange.min + 1;
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>期待メッセージ数</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${expectedMsg}個</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>実取得メッセージ数</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>${messageNumbers.length}個</strong></td>
+            </tr>`;
+
+            html += `<tr style="background: ${isComplete ? '#c3e6cb' : '#ffccbc'};">
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>欠損メッセージ数</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: ${isComplete ? 'green' : 'red'}">${missingMessages.length}個</strong></td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>完全性</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>${completenessPercentage}%</strong></td>
+            </tr>`;
+            html += `</table>`;
+
+            if (!isComplete && missingMessages.length > 0) {
+                html += `<h4 style="color: red;">📍 欠損メッセージ番号:</h4>`;
+                html += `<p style="background: #fff; padding: 10px; border-radius: 3px; font-family: monospace; word-break: break-all; border: 1px solid #ccc;">`;
+                html += missingMessages.join(', ');
+                html += `</p>`;
+                html += `<p style="font-size: 12px; color: #666;">※ これらのメッセージ番号がチェーンから欠損しています</p>`;
+            } else {
+                html += `<p style="color: green; font-weight: bold;">✓ すべてのメッセージが揃っています</p>`;
+            }
+
+            html += `</div>`;
+            document.getElementById('debugInfo').innerHTML += html;
+        }
+
+        // 欠損検出の検証結果を表示
+        function displayVerificationResult(verification) {
+            let html = `<div style="background: #fff3cd; border: 2px solid #ffc107; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
+            html += `<h4>欠損検出の検証</h4>`;
+            html += `<p>状態: <strong style="color: ${verification.isValid ? 'green' : 'red'}">${verification.isValid ? '✓ 正常' : '✗ 異常'}</strong></p>`;
+
+            if (verification.errors.length > 0) {
+                html += `<p style="color: red;">エラー:</p><ul>`;
+                verification.errors.forEach(err => {
+                    html += `<li>${err}</li>`;
+                });
+                html += `</ul>`;
+            }
+
+            html += `<p>範囲: ${verification.details.expectedRange.min} ～ ${verification.details.expectedRange.max} (期待${verification.details.expectedRange.count}個)</p>`;
+            html += `<p>実取得: ${verification.details.totalExtracted}個</p>`;
+            html += `<p>欠損: ${verification.details.lostCount}個</p>`;
+
+            html += `</div>`;
+            document.getElementById('debugInfo').innerHTML += html;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //WAB調査
+
+        // ★ WAVファイルのメタデータを解析
+        function analyzeWAVMetadata(byteArray) {
+            const view = new DataView(byteArray.buffer, byteArray.byteOffset, byteArray.byteLength);
+
+            const result = {
+                riffHeader: null,
+                fileSize: 0,
+                format: null,
+                dataChunkSize: 0,
+                actualDataSize: byteArray.length,
+                match: false,
+                isMismatch: false
+            };
+
+            try {
+                // RIFF ヘッダー確認
+                const riff = String.fromCharCode(
+                    view.getUint8(0),
+                    view.getUint8(1),
+                    view.getUint8(2),
+                    view.getUint8(3)
+                );
+
+                if (riff !== 'RIFF') {
+                    console.warn("⚠ RIFFヘッダーが見つかりません");
+                    return result;
+                }
+
+                result.riffHeader = riff;
+
+                // ファイルサイズ（リトルエンディアン）
+                result.fileSize = view.getUint32(4, true) + 8; // +8 は RIFF ヘッダー自体
+
+                // フォーマット確認
+                result.format = String.fromCharCode(
+                    view.getUint8(8),
+                    view.getUint8(9),
+                    view.getUint8(10),
+                    view.getUint8(11)
+                );
+
+                // "data" チャンクを探す
+                let dataChunkPos = -1;
+                for (let i = 12; i < byteArray.length - 4; i++) {
+                    if (
+                        view.getUint8(i) === 0x64 &&     // 'd'
+                        view.getUint8(i + 1) === 0x61 && // 'a'
+                        view.getUint8(i + 2) === 0x74 && // 't'
+                        view.getUint8(i + 3) === 0x61    // 'a'
+                    ) {
+                        dataChunkPos = i;
+                        break;
+                    }
+                }
+
+                if (dataChunkPos !== -1) {
+                    result.dataChunkSize = view.getUint32(dataChunkPos + 4, true);
+                    result.actualDataInChunk = dataChunkPos + 8 + result.dataChunkSize;
+                }
+
+                // 容量の不一致をチェック
+                result.match = (result.fileSize === result.actualDataSize);
+                result.isMismatch = !result.match;
+
+                console.log("=== WAVメタデータ解析 ===");
+                console.log("RIFFヘッダー:", result.riffHeader);
+                console.log("メタデータ記載サイズ:", result.fileSize, "bytes");
+                console.log("実ファイルサイズ:", result.actualDataSize, "bytes");
+                console.log("dataチャンク記載サイズ:", result.dataChunkSize, "bytes");
+                console.log("容量一致:", result.match);
+                console.log("不一致:", result.isMismatch);
+
+                if (result.isMismatch) {
+                    const diff = result.actualDataSize - result.fileSize;
+                    console.log(`⚠ サイズ差分: ${Math.abs(diff)} bytes (${(Math.abs(diff) / 1024).toFixed(2)} KB)`);
+                }
+
+            } catch (e) {
+                console.error("WAVメタデータ解析エラー:", e.message);
+            }
+
+            return result;
+        }
+
+        // displayLostTransactionAnalysis を修正
+        function displayLostTransactionAnalysis(debugInfo) {
+            const { transactionContinuity } = debugInfo;
+            if (!transactionContinuity) return;
+
+            const {
+                transactionArrayCount,
+                messageNumbers,
+                missingMessages,
+                messageRange,
+                isComplete,
+                completenessPercentage
+            } = transactionContinuity;
+
+            let html = `<div style="background: ${isComplete ? '#d4edda' : '#fff3cd'}; border: 2px solid ${isComplete ? '#28a745' : '#ff9800'}; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
+            html += `<h3 style="color: ${isComplete ? '#155724' : '#ff6600'}; margin-top: 0;">${isComplete ? '✓' : '⚠'} トランザクション構造分析</h3>`;
+
+            html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">`;
+            html += `<tr style="background: ${isComplete ? '#c3e6cb' : '#ffe0b2'};">
+        <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">項目</th>
+        <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">値</th>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>Tx配列インデックス範囲</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;">0 ～ ${transactionArrayCount - 1} (合計${transactionArrayCount}個)</td>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>メッセージ番号範囲</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${messageRange.min} ～ ${messageRange.max}</td>
+    </tr>`;
+
+            const expectedMsg = messageRange.max - messageRange.min + 1;
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>期待メッセージ数</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${expectedMsg}個</td>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>実取得メッセージ数</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>${messageNumbers.length}個</strong></td>
+    </tr>`;
+
+            html += `<tr style="background: ${isComplete ? '#c3e6cb' : '#ffccbc'};">
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>欠損メッセージ数</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: ${isComplete ? 'green' : 'red'}">${missingMessages.length}個</strong></td>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>完全性</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>${completenessPercentage}%</strong></td>
+    </tr>`;
+            html += `</table>`;
+
+            if (!isComplete && missingMessages.length > 0) {
+                html += `<h4 style="color: red;">📍 欠損メッセージ番号:</h4>`;
+                html += `<p style="background: #fff; padding: 10px; border-radius: 3px; font-family: monospace; word-break: break-all; border: 1px solid #ccc;">`;
+                html += missingMessages.join(', ');
+                html += `</p>`;
+            } else {
+                html += `<p style="color: green; font-weight: bold;">✓ すべてのメッセージが揃っています</p>`;
+            }
+
+            html += `</div>`;
+
+            if (!document.getElementById('debugInfo')) {
+                const debugDiv = document.createElement('div');
+                debugDiv.id = 'debugInfo';
+                document.body.appendChild(debugDiv);
+            }
+            document.getElementById('debugInfo').innerHTML += html;
+
+            // ★ デバッグログを追加
+            console.log("=== displayLostTransactionAnalysis 実行 ===");
+            console.log("debugInfo:", debugInfo);
+            console.log("aggregateTransactions:", debugInfo.aggregateTransactions);
+            console.log("missingMessages:", missingMessages);
+
+            // ★ 欠損メッセージサイズ分析を追加（全体のaggTxesを使用）
+            if (missingMessages.length > 0) {
+                console.log("✓ 欠損メッセージあり - 分析開始");
+
+                // aggregateTransactions配列がある場合
+                if (debugInfo.aggregateTransactions && Array.isArray(debugInfo.aggregateTransactions)) {
+                    console.log("✓ aggregateTransactions 配列を検出");
+                    const analysis = analyzeActualMissingMessageSize(debugInfo.aggregateTransactions, missingMessages);
+                    console.log("✓ 分析完了:", analysis);
+                    displayMissingMessageAnalysis(analysis);
+                } else {
+                    console.warn("⚠ aggregateTransactionsが見つかりません");
+                    console.warn("debugInfo のキー:", Object.keys(debugInfo));
+                }
+            } else {
+                console.log("欠損メッセージなし - 分析スキップ");
+            }
+        }
+        function displayWAVAnalysis(wavMetadata) {
+            if (!wavMetadata || !wavMetadata.riffHeader) return;
+
+            let html = `<div style="background: #e3f2fd; border: 2px solid #2196f3; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
+            html += `<h3 style="color: #1976d2; margin-top: 0;">🎵 WAVメタデータ解析</h3>`;
+
+            html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">`;
+            html += `<tr style="background: #bbdefb;">
+                <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">項目</th>
+                <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">値</th>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>RIFFヘッダー</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${wavMetadata.riffHeader}</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>メタデータ記載サイズ</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${(wavMetadata.fileSize / (1024 * 1024)).toFixed(2)} MB (${wavMetadata.fileSize} bytes)</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>実ファイルサイズ</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${(wavMetadata.actualDataSize / (1024 * 1024)).toFixed(2)} MB (${wavMetadata.actualDataSize} bytes)</td>
+            </tr>`;
+
+            html += `<tr>
+                <td style="padding: 8px; border: 1px solid #ccc;"><strong>dataチャンク記載サイズ</strong></td>
+                <td style="padding: 8px; border: 1px solid #ccc;">${(wavMetadata.dataChunkSize / (1024 * 1024)).toFixed(2)} MB (${wavMetadata.dataChunkSize} bytes)</td>
+            </tr>`;
+
+            if (wavMetadata.isMismatch) {
+                const diff = wavMetadata.actualDataSize - wavMetadata.fileSize;
+                html += `<tr style="background: #ffebee;">
+                    <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #d32f2f;">⚠ サイズ不一致</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #d32f2f;">${Math.abs(diff)} bytes (${(Math.abs(diff) / 1024).toFixed(2)} KB)</strong></td>
+                </tr>`;
+            } else {
+                html += `<tr style="background: #e8f5e9;">
+                    <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #2e7d32;">✓ 容量一致</strong></td>
+                    <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #2e7d32;">一致しています</strong></td>
+                </tr>`;
+            }
+
+            html += `</table>`;
+
+            if (wavMetadata.isMismatch) {
+                html += `<p style="font-size: 12px; color: #666;">
+                    <strong>原因の推測：</strong><br/>
+                    • メタデータの「fileSize」フィールドは固定値<br/>
+                    • 実際のデータサイズが異なっている<br/>
+                    • 欠損データはメタデータと異なるサイズで復元されている可能性
+                </p>`;
+            }
+
+            html += `</div>`;
+
+            if (!document.getElementById('debugInfo')) {
+                const debugDiv = document.createElement('div');
+                debugDiv.id = 'debugInfo';
+                document.body.appendChild(debugDiv);
+            }
+            document.getElementById('debugInfo').innerHTML += html;
+        }
+
+        // 欠損メッセージ分析を表示
+        function displayMissingMessageAnalysis(analysis) {
+            let html = `<div style="background: #fff8e1; border: 2px solid #ff9800; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
+            html += `<h3 style="color: #e65100; margin-top: 0;">🔍 欠損メッセージサイズ分析</h3>`;
+
+            html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">`;
+            html += `<tr style="background: #ffe0b2;">
+        <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">項目</th>
+        <th style="padding: 8px; border: 1px solid #ccc; text-align: left;">値</th>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>平均メッセージサイズ</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;">${analysis.avgMessageSize.toFixed(0)} bytes</td>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>欠損メッセージ数</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>${analysis.missingMessageDetails.length}個</strong></td>
+    </tr>`;
+
+            html += `<tr>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>欠損メッセージ推定サイズ</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #ff6600;">${(analysis.avgMissingSize / 1024).toFixed(2)} KB</strong></td>
+    </tr>`;
+
+            html += `<tr style="background: #ffccbc;">
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong>あるべき総サイズ</strong></td>
+        <td style="padding: 8px; border: 1px solid #ccc;"><strong style="color: #d32f2f;">${((analysis.avgMissingSize) / (1024 * 1024)).toFixed(2)} MB</strong></td>
+    </tr>`;
+
+            html += `</table>`;
+
+            html += `<p style="font-size: 12px; color: #666;">
+        <strong>重要な発見：</strong><br/>
+        • 欠損メッセージ ${analysis.missingMessageDetails.length}個 × 平均 ${analysis.avgMessageSize.toFixed(0)} bytes<br/>
+        • = 推定 ${(analysis.avgMissingSize / 1024).toFixed(2)} KB のサイズが不足しているはず<br/>
+        • しかし実ファイルサイズは同じ → <strong style="color: #d32f2f;">欠損は実データではなく空メッセージである可能性</strong>
+    </p>`;
+
+            html += `</div>`;
+
+            if (!document.getElementById('debugInfo')) {
+                const debugDiv = document.createElement('div');
+                debugDiv.id = 'debugInfo';
+                document.body.appendChild(debugDiv);
+            }
+            document.getElementById('debugInfo').innerHTML += html;
+        }
+
+        // ★ 欠損メッセージの実際のサイズを調査
+        function analyzeActualMissingMessageSize(aggTxes, missingMessages) {
+            console.log("analyzeActualMissingMessageSize 開始");
+            console.log("aggTxes.length:", aggTxes.length);
+            console.log("missingMessages.length:", missingMessages.length);
+
+            const result = {
+                totalMissingSize: 0,
+                missingMessageDetails: [],
+                avgMessageSize: 0,
+                avgMissingSize: 0
+            };
+
+            // 全メッセージのサイズを計算
+            let totalSize = 0;
+            let totalMessages = 0;
+            const messageSizes = [];
+
+            for (let i = 15; i < aggTxes.length; i++) {
+                if (aggTxes[i][0] && aggTxes[i][0].transaction && aggTxes[i][0].transaction.message) {
+                    const msgNum = Number(aggTxes[i][0].transaction.message);
+                    if (!isNaN(msgNum)) {
+                        const messageData = aggTxes[i][0].transaction.message;
+                        const messageSize = messageData.length;
+                        messageSizes.push({
+                            messageNumber: msgNum,
+                            size: messageSize
+                        });
+                        totalSize += messageSize;
+                        totalMessages++;
+                    }
+                }
+            }
+
+            result.avgMessageSize = totalMessages > 0 ? totalSize / totalMessages : 0;
+
+            // 欠損メッセージの推定サイズ
+            result.avgMissingSize = missingMessages.length * result.avgMessageSize;
+
+            // 欠損メッセージの詳細
+            missingMessages.forEach(msgNum => {
+                const surroundingMessages = messageSizes.filter(m =>
+                    m.messageNumber >= msgNum - 2 && m.messageNumber <= msgNum + 2
+                );
+                result.missingMessageDetails.push({
+                    messageNumber: msgNum,
+                    surroundingMessages: surroundingMessages,
+                    estimatedSize: result.avgMessageSize
+                });
+            });
+
+            console.log("=== 欠損メッセージサイズ分析 ===");
+            console.log("全メッセージ数:", totalMessages);
+            console.log("全メッセージ総サイズ:", totalSize, "bytes");
+            console.log("平均メッセージサイズ:", result.avgMessageSize.toFixed(0), "bytes");
+            console.log("欠損メッセージ数:", missingMessages.length);
+            console.log("欠損メッセージ推定総サイズ:", result.avgMissingSize.toFixed(0), "bytes");
+            console.log("あるべき総サイズ:", (totalSize + result.avgMissingSize).toFixed(0), "bytes");
+            console.log("完全な分析結果:", result);
+
+            return result;
         }
     </script>
 </body>
