@@ -19,6 +19,8 @@ class SymbolTransactionFetcher {
             totalSteps: 0,
             percentage: 0,
             message: '',
+            startTime: null,
+            estimatedTimeRemaining: null,
             details: {
                 fetched: 0,
                 total: 0
@@ -218,6 +220,13 @@ class SymbolTransactionFetcher {
      * @returns {Promise<Object>} ヘッダーとデータを含むオブジェクト
      */
     async getNFTDriveData(transactions, options = { debugger: false }) {
+        // ★ データ復元フェーズ開始
+        this.progress.phase = 'processing';
+        this.progress.percentage = 0;
+        this.progress.message = 'データを復元中...';
+        this.progress.currentStep = 0;
+        this.progress.totalSteps = 100;
+
         const filteredTxs = transactions;
 
         if (filteredTxs.length === 0) {
@@ -285,6 +294,11 @@ class SymbolTransactionFetcher {
             console.error("有効なアグリゲートトランザクションがありません");
             return null;
         }
+        
+        // ★ プログレス更新: ソート完了
+        this.progress.percentage = 30;
+        this.progress.message = 'メッセージをデコード中...';
+        
         // メッセージをデコード
         for (let i = 0; i < uniqueAggTxes.length; i++) {
             for (let j = 0; j < uniqueAggTxes[i].length; j++) {
@@ -307,6 +321,7 @@ class SymbolTransactionFetcher {
                 completenessPercentage: 100
             };
         }
+
         // ヘッダー・データ結合用オブジェクト
         let mergedMessageObj = {
             header: {
@@ -334,6 +349,17 @@ class SymbolTransactionFetcher {
             }
         };
 
+        // ★ プログレス更新: デコード完了
+        this.progress.percentage = 60;
+        this.progress.message = 'ヘッダー情報を抽出中...';
+
+
+
+        //ヘッダーに合わせてNFTDriveの特殊データの処理をする
+        //①OpenSeaサムネイル付きのオーディオファイル
+    
+
+        
         // MIMEデータ取得（複数のパターンに対応）
         let isMimeFormat = false;
         // パターン1: インデックス15がdata:...;base64,...形式
@@ -360,6 +386,10 @@ class SymbolTransactionFetcher {
             }
         }
 
+        // ★ プログレス更新: ヘッダー抽出完了
+        this.progress.percentage = 80;
+        this.progress.message = 'データを結合中...';
+        
         // データ部の結合
         for (let i = 0; i < uniqueAggTxes.length; i++) {
             for (let j = 0; j < uniqueAggTxes[i].length; j++) {
@@ -383,8 +413,43 @@ class SymbolTransactionFetcher {
         // パターン2: インデックス15が暗号化されたBase64データの場合
         if (!isMimeFormat) {
             console.log("インデックス15がMIME形式ではありません。暗号化データとして処理します。");
+            
+            // ★ 暗号化データの場合でも、headerは暗号化されていないため、インデックス0-14から抽出
+            mergedMessageObj.header.mimeType = "text/encrypted"; // 暗号化されていることを示す
+            mergedMessageObj.header.id = uniqueAggTxes[0][2]?.transaction?.message || null;
+            mergedMessageObj.header.serial = uniqueAggTxes[0][3]?.transaction?.message || null;
+            mergedMessageObj.header.owner = uniqueAggTxes[0][1]?.transaction?.message || null;
+            mergedMessageObj.header.message = uniqueAggTxes[0][4]?.transaction?.message || null;
+            mergedMessageObj.header.extension_1 = uniqueAggTxes[0][5]?.transaction?.message || null;
+            mergedMessageObj.header.extension_2 = uniqueAggTxes[0][6]?.transaction?.message || null;
+            mergedMessageObj.header.extension_3 = uniqueAggTxes[0][7]?.transaction?.message || null;
+            mergedMessageObj.header.extension_4 = uniqueAggTxes[0][8]?.transaction?.message || null;
+            mergedMessageObj.header.extension_5 = uniqueAggTxes[0][9]?.transaction?.message || null;
+            mergedMessageObj.header.extension_6 = uniqueAggTxes[0][10]?.transaction?.message || null;
+            mergedMessageObj.header.extension_7 = uniqueAggTxes[0][11]?.transaction?.message || null;
+            mergedMessageObj.header.extension_8 = uniqueAggTxes[0][12]?.transaction?.message || null;
+            mergedMessageObj.header.extension_9 = uniqueAggTxes[0][13]?.transaction?.message || null;
+            mergedMessageObj.header.extension_10 = uniqueAggTxes[0][14]?.transaction?.message || null;
+            
+            console.log("✓ 暗号化データのheader情報を抽出:", {
+                id: mergedMessageObj.header.id,
+                owner: mergedMessageObj.header.owner,
+                message: mergedMessageObj.header.message
+            });
+        }
+        //mimeTypeがnullの場合は"text/plain"に設定
+        if (!mergedMessageObj.header.mimeType) {
             mergedMessageObj.header.mimeType = "text/plain";
         }
+        //extension_10にglbの入力がある場合はmimeTypeを"application/glb"に設定
+        if (mergedMessageObj.header.extension_10 && mergedMessageObj.header.extension_10.toLowerCase().includes('glb')) {
+            mergedMessageObj.header.mimeType = "application/glb";
+        }
+
+
+
+   
+
         // データサイズ（UTF-8バイト長）を計算
         mergedMessageObj.debugInfo.size = await this.getUtf8ByteLength(mergedMessageObj.data);
         // ★ プログレス完了
@@ -401,6 +466,52 @@ class SymbolTransactionFetcher {
     async getUtf8ByteLength(str) {
         return new TextEncoder().encode(str).length;
     }
+
+
+
+    /**
+     * ヘッダー情報から特別な処理が必要なNFTDriveデータを解析する関数
+     * @param {Object} header - ヘッダーオブジェクト
+     * @returns {Object} 解析結果
+     */
+    async analyzeSpecialNFTDriveHeader(header) {
+        const result = {
+            isNomal: true,
+            type: null
+        };
+
+        // 1. OpenSeaサムネイル付きオーディオファイルの解析
+        if (header.extension_1 && header.extension_5 && header.extension_6) {
+            const ext1 = header.extension_1;
+            const ext5 = header.extension_5;
+            const ext6 = header.extension_6;
+
+            // extension_1にOpenSeaメタデータの必須フィールドが含まれているかチェック
+            const hasOpenSeaFields = 
+                ext1.includes('"description"') &&
+                ext1.includes('"external_url"') &&
+                ext1.includes('"image"') &&
+                ext1.includes('"name"') &&
+                ext1.includes('"animation_url"');
+
+            // extension_5にSymbolアドレスが含まれているかチェック（TまたはNで始まる39文字）
+            const symbolAddressPattern = /[TN][A-Z0-9]{38}/;
+            const hasSymbolAddress = symbolAddressPattern.test(ext5);
+
+            // extension_6に"mp3"が含まれているかチェック
+            const hasMp3 = ext6.toLowerCase().includes('mp3');
+
+            // すべての条件を満たす場合
+            if (hasOpenSeaFields && hasSymbolAddress && hasMp3) {
+                result.isNomal = false;
+                result.type = 'OpenSeaAudioWithThumbnail';
+                console.log('✓ OpenSeaサムネイル付きオーディオファイルを検出');
+            }
+        }
+
+        return result;
+    }
+
 
 
     /**
@@ -677,66 +788,159 @@ class SymbolTransactionFetcher {
      * 1ノード固定で confirmed tx を安定取得（offsetカーソル）
      * - pageNumberは常に1
      * - offsetに「最後のentry id」を入れて次ページへ進める
+     * - 失敗時は別ノードで自動リトライ
+     * - ページング中の各リクエストにもリトライを適用
      * @param {string} address
      * @param {object} opts
      * @param {number} opts.nodeIndex
      * @param {number} opts.pageSize (10..100)
      * @param {number[]} opts.types
      * @param {string} opts.order ("asc"|"desc")
+     * @param {number} opts.timeout - リクエストタイムアウト（ミリ秒、デフォルト15000）
+     * @param {number} opts.pageRetries - ページ取得の最大リトライ回数（デフォルト3）
      * @returns {Promise<Array<{hash:string, entryId:string, height:number, timestamp:string}>>}
      */
     async fetchAggregateHashesOneNodeOffset(address, opts = {}) {
         const {
             nodeIndex = 0,
             pageSize = 100,
-            // Aggregate Complete(16705) だけで良いなら [16705]
-            // 必要なら [16705, 16961] など
             types = [16705],
-            // 多くの運用では desc が扱いやすい
-            order = "desc"
+            order = "desc",
+            timeout = 15000,
+            pageRetries = 2
         } = opts;
 
-        const node = this.nodes[nodeIndex];
-        if (!node) throw new Error(`nodeIndex ${nodeIndex} is invalid`);
-
-        const results = [];
-        let offset = undefined;
-
-        while (true) {
-            const typeParams = types.map(t => `type=${encodeURIComponent(t)}`).join("&");
-
-            // ★ pageNumberは固定（1）でOK、offsetでページングする
-            let url =
-                `${node}/transactions/confirmed?address=${encodeURIComponent(address)}` +
-                `&${typeParams}` +
-                `&pageSize=${pageSize}` +
-                `&pageNumber=1` +
-                `&order=${encodeURIComponent(order)}`;
-
-            if (offset) url += `&offset=${encodeURIComponent(offset)}`;
-
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`HTTP ${res.status} at ${url}`);
-            const json = await res.json();
-
-            const data = Array.isArray(json.data) ? json.data : [];
-            if (data.length === 0) break;
-
-            for (const item of data) {
-                const hash = item?.meta?.hash;
-                const entryId = item?.id; // ← レスポンス要素の「entry id」
-                const height = Number(item?.meta?.height ?? 0);
-                const timestamp = item?.meta?.timestamp ?? "";
-
-                if (hash && entryId) results.push({ hash, entryId, height, timestamp });
-            }
-
-            // ★ 次のoffsetは「このページの最後のentry id」
-            offset = data[data.length - 1]?.id;
-            if (!offset) break;
+        // 全ノードのリストを作成（指定されたnodeIndexを最優先）
+        const nodeIndices = [nodeIndex];
+        for (let i = 0; i < this.nodes.length; i++) {
+            if (i !== nodeIndex) nodeIndices.push(i);
         }
 
-        return results;
+        let lastError = null;
+        const failedNodes = [];
+
+        // 簡易sleep
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        // 各ノードで試行（ノード切り替え時は必ず最初からやり直す）
+        for (const currentNodeIndex of nodeIndices) {
+            const node = this.nodes[currentNodeIndex];
+            if (!node) continue;
+
+            try {
+                // ★ ノードが変わる度に必ずリセット（Symbol仕様：ノード間でページ内容がずれる可能性あり）
+                const results = [];
+                let offset = undefined;
+                let consecutiveErrors = 0;
+                const maxConsecutiveErrors = 3;
+
+                while (true) {
+                    const typeParams = types.map(t => `type=${encodeURIComponent(t)}`).join("&");
+
+                    let url =
+                        `${node}/transactions/confirmed?address=${encodeURIComponent(address)}` +
+                        `&${typeParams}` +
+                        `&pageSize=${pageSize}` +
+                        `&pageNumber=1` +
+                        `&order=${encodeURIComponent(order)}`;
+
+                    if (offset) url += `&offset=${encodeURIComponent(offset)}`;
+
+                    // ★ ページ単位でのリトライ処理
+                    let pageSuccess = false;
+                    let pageData = null;
+                    let pageError = null;
+
+                    for (let retry = 0; retry <= pageRetries; retry++) {
+                        if (retry > 0) {
+                            const backoffDelay = Math.min(1000 * Math.pow(2, retry - 1), 5000);
+                            console.warn(`⚠ リトライ ${retry}/${pageRetries} (${backoffDelay}ms後): ${node}`);
+                            await sleep(backoffDelay);
+                        }
+
+                        try {
+                            // タイムアウト付きfetch
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+                            const res = await fetch(url, { signal: controller.signal });
+                            clearTimeout(timeoutId);
+
+                            if (!res.ok) {
+                                throw new Error(`HTTP ${res.status}`);
+                            }
+
+                            const json = await res.json();
+                            pageData = Array.isArray(json.data) ? json.data : [];
+                            pageSuccess = true;
+                            consecutiveErrors = 0; // 成功したらリセット
+                            break;
+
+                        } catch (fetchError) {
+                            pageError = fetchError;
+                            
+                            if (fetchError.name === 'AbortError') {
+                                console.warn(`✗ タイムアウト (試行${retry + 1}/${pageRetries + 1}): ${node} (${timeout}ms)`);
+                            } else {
+                                console.warn(`✗ エラー (試行${retry + 1}/${pageRetries + 1}): ${node} - ${fetchError.message}`);
+                            }
+
+                            // 最後のリトライでも失敗した場合
+                            if (retry === pageRetries) {
+                                consecutiveErrors++;
+                                
+                                // 連続エラーが閾値を超えたらノード切り替え
+                                if (consecutiveErrors >= maxConsecutiveErrors) {
+                                    throw new Error(`連続${consecutiveErrors}回エラー: ${fetchError.message}`);
+                                }
+                            }
+                        }
+                    }
+
+                    // ページ取得失敗（リトライ後も）
+                    if (!pageSuccess || pageData === null) {
+                        throw pageError || new Error('ページ取得失敗');
+                    }
+
+                    // データが空の場合は終了
+                    if (pageData.length === 0) break;
+
+                    // データを結果に追加
+                    for (const item of pageData) {
+                        const hash = item?.meta?.hash;
+                        const entryId = item?.id;
+                        const height = Number(item?.meta?.height ?? 0);
+                        const timestamp = item?.meta?.timestamp ?? "";
+
+                        if (hash && entryId) results.push({ hash, entryId, height, timestamp });
+                    }
+
+                    // 次のoffset
+                    offset = pageData[pageData.length - 1]?.id;
+                    if (!offset) break;
+                }
+
+                // 成功したらここで返す
+                if (currentNodeIndex !== nodeIndex) {
+                    console.warn(`✓ ノード切り替え成功: ${node} (index: ${currentNodeIndex})`);
+                }
+                console.log(`✓ 取得完了: ${results.length}件のトランザクションハッシュ`);
+                return results;
+
+            } catch (error) {
+                lastError = error;
+                failedNodes.push({ node, index: currentNodeIndex, error: error.message });
+                
+                console.warn(`✗ ノード全体で失敗: ${node} - ${error.message}`);
+                
+                // まだ試せるノードがあれば続行
+                continue;
+            }
+        }
+
+        // 全ノード失敗
+        const errorDetails = failedNodes.map(f => `${f.node} (${f.error})`).join(', ');
+        throw new Error(`全ノードでトランザクションリスト取得に失敗: ${errorDetails}`);
     }
 
     /**
@@ -806,6 +1010,7 @@ class SymbolTransactionFetcher {
         this.progress.currentStep = 0;
         this.progress.percentage = 0;
         this.progress.message = `トランザクション詳細を取得中... (0/${hashes.length})`;
+        if (!this.progress.startTime) this.progress.startTime = Date.now();
         this.progress.details.total = hashes.length;
         this.progress.details.fetched = 0;
 
@@ -828,6 +1033,14 @@ class SymbolTransactionFetcher {
                 this.progress.percentage = Math.floor((completed / hashes.length) * 100);
                 this.progress.message = `トランザクション詳細を取得中... (${completed}/${hashes.length})`;
                 this.progress.details.fetched = completed;
+                
+                // 推定残り時間を計算
+                if (this.progress.startTime && completed > 0) {
+                    const elapsed = Date.now() - this.progress.startTime;
+                    const avgTimePerItem = elapsed / completed;
+                    const remaining = hashes.length - completed;
+                    this.progress.estimatedTimeRemaining = Math.ceil(avgTimePerItem * remaining / 1000);
+                }
             }
         };
 
@@ -838,6 +1051,7 @@ class SymbolTransactionFetcher {
         this.progress.phase = 'complete';
         this.progress.percentage = 100;
         this.progress.message = '完了';
+        this.progress.estimatedTimeRemaining = 0;
 
         return out;
     }
@@ -860,6 +1074,8 @@ class SymbolTransactionFetcher {
         this.progress.totalSteps = 0;
         this.progress.percentage = 0;
         this.progress.message = 'トランザクションリストを取得中...';
+        this.progress.startTime = Date.now();
+        this.progress.estimatedTimeRemaining = null;
         this.progress.details.fetched = 0;
         this.progress.details.total = 0;
 
@@ -886,6 +1102,12 @@ class SymbolTransactionFetcher {
             concurrency,
             retries
         });
+
+        // ★ トランザクション取得完了時に明示的に100%表示
+        this.progress.phase = 'complete';
+        this.progress.percentage = 100;
+        this.progress.message = 'トランザクション取得完了';
+        this.progress.estimatedTimeRemaining = 0;
 
         // 失敗だけ抽出したい場合
         const failed = items.filter(x => !x?.tx);
@@ -916,6 +1138,8 @@ class SymbolTransactionFetcher {
             totalSteps: 0,
             percentage: 0,
             message: '',
+            startTime: null,
+            estimatedTimeRemaining: null,
             details: {
                 fetched: 0,
                 total: 0

@@ -295,14 +295,34 @@ class SymbolTransactionFetcher {
             }
         }
 
-        // パターン2: インデックス15が暗号化されたBase64データの場合
+        // パターン2: インデックス15が暗号化されたBase64データの場合（U2FsdGVkX1で始まる）
         if (!isMimeFormat) {
             console.log("インデックス15がMIME形式ではありません。暗号化データとして処理します。");
             
-            // MIMEタイプをテキストに設定
-            mergedMessageObj.header.mimeType = "text/plain";
+            // ★ 暗号化データの場合でも、headerは暗号化されていないため、インデックス0-14から抽出
+            mergedMessageObj.header.mimeType = "text/encrypted"; // 暗号化されていることを示す
+            mergedMessageObj.header.id = uniqueAggTxes[0][2]?.transaction?.message || null;
+            mergedMessageObj.header.serial = uniqueAggTxes[0][3]?.transaction?.message || null;
+            mergedMessageObj.header.owner = uniqueAggTxes[0][1]?.transaction?.message || null;
+            mergedMessageObj.header.message = uniqueAggTxes[0][4]?.transaction?.message || null;
+            mergedMessageObj.header.extension_1 = uniqueAggTxes[0][5]?.transaction?.message || null;
+            mergedMessageObj.header.extension_2 = uniqueAggTxes[0][6]?.transaction?.message || null;
+            mergedMessageObj.header.extension_3 = uniqueAggTxes[0][7]?.transaction?.message || null;
+            mergedMessageObj.header.extension_4 = uniqueAggTxes[0][8]?.transaction?.message || null;
+            mergedMessageObj.header.extension_5 = uniqueAggTxes[0][9]?.transaction?.message || null;
+            mergedMessageObj.header.extension_6 = uniqueAggTxes[0][10]?.transaction?.message || null;
+            mergedMessageObj.header.extension_7 = uniqueAggTxes[0][11]?.transaction?.message || null;
+            mergedMessageObj.header.extension_8 = uniqueAggTxes[0][12]?.transaction?.message || null;
+            mergedMessageObj.header.extension_9 = uniqueAggTxes[0][13]?.transaction?.message || null;
+            mergedMessageObj.header.extension_10 = uniqueAggTxes[0][14]?.transaction?.message || null;
             
-            // インデックス15以降のデータのみを結合（ヘッダーは含めない）
+            console.log("✓ 暗号化データのheader情報を抽出:", {
+                id: mergedMessageObj.header.id,
+                owner: mergedMessageObj.header.owner,
+                message: mergedMessageObj.header.message
+            });
+            
+            // インデックス15以降のデータのみを結合（暗号化されたbase64データ）
             for (let i = 0; i < uniqueAggTxes.length; i++) {
                 for (let j = 0; j < uniqueAggTxes[i].length; j++) {
                     if (uniqueAggTxes[i][j].transaction) {
