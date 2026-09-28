@@ -28,14 +28,77 @@
             background-color: #ccc;
         }
 
+
         .panel {
             padding: 10px;
             display: none;
-            background-color: white;
-            border: 1px solid #ccc;
-            white-space: pre-wrap;
+            background-color: #fafafa;
+            color: #333;
+            border: 1px solid #ddd;
+            border-top: none;
             word-wrap: break-word;
+            font-size: small;
         }
+
+        /* 文字列の値（data など）だけは改行を残す */
+        .panel-text {
+            white-space: pre-wrap;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        /* header / debugInfo の表。入れ子にしてもキー列の幅を固定し、右へずれていかないようにする */
+        .kv-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .kv-table th,
+        .kv-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .kv-table tr:last-child > th,
+        .kv-table tr:last-child > td {
+            border-bottom: none;
+        }
+
+        .kv-table th {
+            width: 200px;
+            font-weight: 600;
+            color: #555;
+            background: #f3f4f6;
+            white-space: nowrap;
+        }
+
+        .kv-table .kv-table {
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }
+
+        .kv-table .kv-table th {
+            width: 170px;
+            background: #f9fafb;
+        }
+
+        .kv-value {
+            color: #1f4e8c;
+            word-break: break-all;
+        }
+
+        .kv-number {
+            font-family: 'Courier New', Courier, monospace;
+            color: #1f4e8c;
+        }
+
+        .kv-true { color: #2e7d32; font-weight: 600; }
+        .kv-false { color: #c62828; font-weight: 600; }
+        .kv-empty { color: #999; }
+        .kv-more { color: #777; font-size: 12px; }
 
         .loader {
             border: 8px solid #f3f3f3;
@@ -57,7 +120,7 @@
             padding: 20px;
             background-color: #f8f9fa;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -206,24 +269,128 @@
     </div>
 
     <script>
+
+        const NODEPORT = 3001;
+        const NODEHTTP = 'https://';
         const NODELIST = {
             mainnet: [
-                "https://sn1.msus-symbol.com:3001",
-                "https://ichigo-node.xyz:3001",
-                "https://0-0-0-0.symbol-nodes.jp:3001",
-                "https://01.symbol-node.com:3001",
-                "https://03.symbol-node.com:3001",
-                "https://symbol-node.teritaris.net:3001",
-                "https://symbol-no:3001"
+
+                // "https://sn1.msus-symbol.com:3001",
+                // "https://0-0-0-0.symbol-nodes.jp:3001",
+                // "https://01.symbol-node.com:3001",
+                // "https://03.symbol-node.com:3001",
+                // "https://symbol-node.teritaris.net:3001",
+                // "https://symbol-mikun.net:3001",
+                // "https://apple.xymnodes.com:3001",
+                // "https://symbol-tools.com:3001",
+                // "https://symbol.auto-harvest.trade:3001",
+                // "https://yumeya1.com:3001",
+                // "https://villhell-symbol-mainnet.net:3001",
+                // "https://harvest-01.symbol.farm:3001",
+                // "https://harvest-02.symbol.farm:3001",
+                // "https://harvest-03.symbol.farm:3001",
+                // "https://xym892.allnodes.me:3001",
+                // "https://xym773.allnodes.me:3001",
+                // "https://node1.xym-harvesting.com:3001",
+                // "https://node2.xym-harvesting.com:3001",
+                // "https://node.symbol-community.com:3001",
+                // "https://0-0.tokyo.symbol-nodes.jp:3001",
+                // "https://0.xym.stakeme.tokyo:3001",
+                // "https://01.symbol-gentoo.tokyo:3001"
+
+
+                "xym.jp1.node.leywapool.com",
+                "symbol-node.harvest-xym.com",
+                "0.xym.stakeme.tokyo",
+                "xymtokyo.harvest-node.net",
+                "sn1.msus-symbol.com",
+                "133.32.2.148.ap.gmobb-fix.jp",
+                "zf-xym1.zaif.jp",
+                "symbol.nagoya",
+                "age01.kitsutsuki.tokyo",
+                "ahra-symbol.com",
+                "vmi1335136.contaboserver.net",
+                "harvest-01.symbol.farm",
+                "harvest-02.symbol.farm",
+                "harvest-03.symbol.farm",
+                "zf-xym2.zaif.jp",
+                "01.symbol-gentoo.tokyo",
+                "xewth.net",
+                "harukaze.symbol-nem.net",
+                "ichigo-node.xyz",
+                "node1.xym-harvesting.com",
+                "node2.xym-harvesting.com",
+                "nem1.kitsutsuki.tokyo",
+                "nem2.kitsutsuki.tokyo",
+                "nem3.kitsutsuki.tokyo",
+                "nem4.kitsutsuki.tokyo",
+                "symbol-main-1.nemtus.com",
+                "vmi2764990.contaboserver.net",
+                "pasomi.net",
+                "mainnet.symbol.binspec.com",
+                "rminis.rellc.jp",
+                "01.symbol-farm.tokyo",
+                "node.sixis.xyz",
+                "000635c1.xym.stir-hosyu.com",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0.symbol-nodes.jp",
+                "0-0-0-0.symbol-nodes.jp",
+                "0-0-0-3.symbol-nodes.jp",
+                "0-0-0-5.symbol-nodes.jp",
+                "0-b.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-1.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-3.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-4.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-5.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-6.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-7.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-8.symbol-nodes.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-9.symbol-nodes.jp",
+                "wolf.importance.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-2.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-3.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-5.tokyo-node.jp",
+                "0-0-0-0-0-0-0-7.tokyo-node.jp",
+                "0-0-0-0-0-0-0-9.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-1.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-2.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-4.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-5.tokyo-node.jp",
+                "0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-0-9.tokyo-node.jp",
+                "00A06705.xym.stir-hosyu.com",
+                "yukikaze.symbol-nem.net",
+                "0-0-xym.cubkab-crypto.tokyo",
+                "0-0-axym.cubkab-crypto.tokyo",
+                "0032bb0a.xym.stir-hosyu.com",
+                "apple.xymnodes.com",
+                "symbol.shizuinet.com",
+                "23639.xym.stir-hosyu.com",
+                "sym-main-01.opening-line.jp",
+                "sym-main-02.opening-line.jp",
+                "sym-main-03.opening-line.jp",
+                "symbol-01.drugn.life",
+                "02.symbol-node.com",
+                "03.symbol-node.com",
+                "symbol-node.teritaris.net",
+                "symbol-tools.com",
+                "symbol.auto-harvest.trade",
+                "7338.work",
+                "villhell-symbol-mainnet.net",
+                "angel.vistiel-arch.jp",
+                "xym.misshiy.club",
+                "yumeya1.com"
+
+
+
+
             ],
             testnet: [
-                "https://201-sai-dual.symboltest.net:3001",
-                "https://testnet1.symbol-mikun.net:3001",
-                "https://testnet2.symbol-mikun.net:3001",
-                "https://sym-test-03.opening-line.jp:3001",
-                "https://001-sai-dual.symboltest.net:3001",
-                "https://vmi831828.contaboserver.net:3001",
-                "https://symbol-azure.0009.co:3001"
+                "testnet1.symbol-mikun.net",
+                "001-sai-dual.symboltest.net",
+                "testnet2.symbol-mikun.net",
+                "sym-test-03.opening-line.jp",
+                "sym-test-01.opening-line.jp",
+                "401-sai-dual.symboltest.net"
             ]
         }
 
@@ -248,10 +415,19 @@
 
         // ネットワークに応じたフェッチャーを初期化
         let fetcher;
+        let progressHideTimer = null; // プログレスバー非表示タイマー
 
         function initializeFetcher(address) {
             const network = getNetworkFromAddress(address);
             shuffleNode = shuffleArray(NODELIST[network]);
+            // ノードURLにポート番号を付与
+            shuffleNode = shuffleNode.map(node => {
+                if (node.startsWith('http://') || node.startsWith('https://')) {
+                    return node; // すでにプロトコルが含まれている場合、そのまま返す
+                } else {
+                    return NODEHTTP + node + ':' + NODEPORT;
+                }
+            });
             fetcher = new SymbolTransactionFetcher(shuffleNode);
         }
 
@@ -283,43 +459,79 @@
             // プログレス監視タイマー
             let progressTimer = setInterval(() => {
                 const progress = fetcher.getProgress();
-                
+
                 // プログレスバーを更新
                 progressBar.style.width = progress.percentage + '%';
                 progressBar.textContent = progress.percentage + '%';
                 progressMessage.textContent = progress.message || '読み込み中...';
-                
+
+                // 詳細情報、経過時間、推定残り時間
+                let detailText = '';
+
+                // 取得件数
                 if (progress.details && progress.details.total > 0) {
-                    progressDetails.textContent = `${progress.details.fetched} / ${progress.details.total} 件取得済み`;
+                    detailText = `${progress.details.fetched} / ${progress.details.total} 件取得済み`;
                 }
+
+                // 経過時間
+                if (progress.startTime) {
+                    const elapsedSeconds = Math.floor((Date.now() - progress.startTime) / 1000);
+                    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+                    const elapsedSecs = elapsedSeconds % 60;
+                    const elapsedText = elapsedMinutes > 0
+                        ? `${elapsedMinutes}分${elapsedSecs}秒`
+                        : `${elapsedSecs}秒`;
+                    detailText += detailText ? ` | 経過: ${elapsedText}` : `経過: ${elapsedText}`;
+                }
+
+                // 推定残り時間
+                if (progress.estimatedTimeRemaining !== null && progress.estimatedTimeRemaining > 0) {
+                    const minutes = Math.floor(progress.estimatedTimeRemaining / 60);
+                    const seconds = progress.estimatedTimeRemaining % 60;
+                    const timeText = minutes > 0
+                        ? `約${minutes}分${seconds}秒`
+                        : `約${seconds}秒`;
+                    detailText += detailText ? ` | 残り: ${timeText}` : `残り: ${timeText}`;
+                }
+
+                progressDetails.textContent = detailText;
             }, 100);
 
-            fetcher.fetchAllAggregatesStable(address,  {
+            fetcher.fetchAllAggregatesStable(address, {
                 indexNodeIndex: 0,
                 indexPageSize: 100,
-                indexTypes :[16705], // 必要なら [16705, 16961]
-                concurrency:2,
-                retries:3
+                indexTypes: [16705], // 必要なら [16705, 16961]
+                concurrency: 2,
+                retries: 3
             }).then(async (result) => {
+                // トランザクション取得の経過時間を計算
+                const fetchElapsedTime = Date.now() - fetcher.getProgress().startTime;
 
-                await fetcher.getNFTDriveData(result, { debugger: true })
-                    .then(async (sortedAggTxes) => {
+                // ★ 100%表示を確実にするため、短い遅延を入れる
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                        // データ表示
+                await restoreRecord(result)
+                    .then(async (record) => {
+                        const sortedAggTxes = record.view;
+
+                        // データ表示。待たない: 暗号化ならパスワードの入力待ちになる
                         renderAccordionFromObject(sortedAggTxes);
-                        base64Preview(sortedAggTxes.header, sortedAggTxes.data, document.getElementById('preview'));
+                        previewRecord(record, document.getElementById('preview'));
 
                         // プログレス完了
                         clearInterval(progressTimer);
-                        setTimeout(() => {
+                        progressHideTimer = setTimeout(() => {
                             progressContainer.classList.remove('show');
                         }, 500);
 
-                        // デバッグモード時に欠損トランザクション分析を表示
-                        if (sortedAggTxes.debugInfo.lostCount > 0) {
-                            sortedAggTxes.debugInfo.aggregateTransactions = result;
-                            displayLostTransactionAnalysis(sortedAggTxes.debugInfo);
-                        }
+                        // デバッグモード時にトランザクション分析を表示（経過時間含む）
+                        sortedAggTxes.debugInfo.aggregateTransactions = result;
+                        sortedAggTxes.debugInfo.fetchElapsedTime = fetchElapsedTime;
+                        displayLostTransactionAnalysis(sortedAggTxes.debugInfo);
+
+
+
+
                     })
                     .catch(err => {
                         console.error("NFTDriveData生成エラー:", err);
@@ -354,12 +566,265 @@
 
         });
 
+        // バイト数を人間が読みやすい形式に変換する関数
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        // 配列を並べて見せる上限。これを超えたら先頭だけ出して残りの個数を添える
+        const KV_ARRAY_PREVIEW = 20;
+
+        /** 値の文字列を HTML に入れる前にエスケープする。中身はチェーン由来のことがある */
+        function kvEscape(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        /** 数値・真偽値・文字列を1つ、見分けやすい形で */
+        function kvScalar(value, parentKey) {
+            if (value === null || value === undefined) return '<span class="kv-empty">null</span>';
+            if (typeof value === 'boolean') {
+                return value ? '<span class="kv-true">✓ true</span>' : '<span class="kv-false">✗ false</span>';
+            }
+            if (typeof value === 'number') {
+                // size キーは単位付きで
+                if (parentKey === 'size') {
+                    return `<span class="kv-number">${formatBytes(value)}</span> <span class="kv-more">(${value.toLocaleString()} bytes)</span>`;
+                }
+                return `<span class="kv-number">${value.toLocaleString()}</span>`;
+            }
+            if (value === '') return '<span class="kv-empty">（空）</span>';
+            return `<span class="kv-value">${kvEscape(value)}</span>`;
+        }
+
+        // オブジェクトをテーブル形式で表示する関数
+        // 戻り値: オブジェクトなら <table>、それ以外は HTML 文字列
+        function renderObjectAsTable(obj, depth = 0, parentKey = '') {
+            if (obj === null || obj === undefined || typeof obj !== 'object') {
+                return kvScalar(obj, parentKey);
+            }
+
+            if (Array.isArray(obj)) {
+                if (obj.length === 0) return '<span class="kv-empty">なし</span>';
+                // 数値や文字列の並び（messageNumbers など）は1行にまとめる。
+                // 箇条書きにすると1個ずつ縦に伸びて読めない
+                if (obj.every(v => v === null || typeof v !== 'object')) {
+                    const head = obj.slice(0, KV_ARRAY_PREVIEW).map(v => kvScalar(v, '')).join(', ');
+                    const rest = obj.length > KV_ARRAY_PREVIEW
+                        ? ` <span class="kv-more">…ほか ${obj.length - KV_ARRAY_PREVIEW} 個（全 ${obj.length} 個）</span>`
+                        : '';
+                    return head + rest;
+                }
+                return `<span class="kv-more">[配列: ${obj.length}個の要素]</span>`;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'kv-table';
+
+            Object.keys(obj).forEach((key) => {
+                const row = table.insertRow();
+
+                const keyCell = document.createElement('th');
+                keyCell.textContent = key;
+                row.appendChild(keyCell);
+
+                const valueCell = row.insertCell(1);
+                const value = obj[key];
+                const rendered = renderObjectAsTable(value, depth + 1, key);
+                if (typeof rendered === 'string') {
+                    valueCell.innerHTML = rendered;
+                } else {
+                    valueCell.appendChild(rendered);
+                }
+            });
+
+            return table;
+        }
+
+        // ノードリストをテーブル形式で表示する関数
+        function renderNodeNetwork(nodeList) {
+            const container = document.createElement('div');
+            container.style.cssText = `
+                background: #fff;
+                border-radius: 4px;
+                padding: 0;
+                margin: 0;
+            `;
+
+            // タイトル
+            const title = document.createElement('div');
+            title.style.cssText = `
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 10px;
+                padding: 10px 15px;
+                color: #555;
+                background: #f9f9f9;
+                border-bottom: 1px solid #e0e0e0;
+            `;
+            title.innerHTML = '🌐 ノードリスト';
+            container.appendChild(title);
+
+            // ノード配列が空の場合
+            if (!nodeList || nodeList.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.style.cssText = 'color: #999; text-align: center; padding: 30px 20px;';
+                emptyMsg.textContent = 'ノード情報がありません';
+                container.appendChild(emptyMsg);
+                return container;
+            }
+
+            // テーブルコンテナ
+            const tableContainer = document.createElement('div');
+            tableContainer.style.cssText = `
+                padding: 0 15px 15px 15px;
+            `;
+
+            // テーブル作成
+            const table = document.createElement('table');
+            table.style.cssText = `
+                width: 100%;
+                border-collapse: collapse;
+                background: #fff;
+                font-size: 12px;
+            `;
+
+            // テーブルヘッダー
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                    <th style="padding: 10px 8px; text-align: left; width: 50px; color: #555; font-weight: bold;">#</th>
+                    <th style="padding: 10px 8px; text-align: left; width: 80px; color: #555; font-weight: bold;">タイプ</th>
+                    <th style="padding: 10px 8px; text-align: left; color: #555; font-weight: bold;">ノードURL</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            // テーブルボディ
+            const tbody = document.createElement('tbody');
+            nodeList.forEach((nodeUrl, index) => {
+                const row = document.createElement('tr');
+                row.style.cssText = `
+                    border-bottom: 1px solid #e0e0e0;
+                    transition: background-color 0.15s;
+                `;
+                row.onmouseover = () => row.style.backgroundColor = '#f9f9f9';
+                row.onmouseout = () => row.style.backgroundColor = '#fff';
+
+                // 番号セル
+                const numCell = document.createElement('td');
+                numCell.style.cssText = 'padding: 10px 8px; color: #999; font-weight: normal;';
+                numCell.textContent = index + 1;
+
+                // タイプセル
+                const typeCell = document.createElement('td');
+                typeCell.style.cssText = 'padding: 10px 8px;';
+                const typeSpan = document.createElement('span');
+                if (index === 0) {
+                    typeSpan.style.cssText = `
+                        background: #4CAF50;
+                        color: #fff;
+                        padding: 3px 10px;
+                        border-radius: 3px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        display: inline-block;
+                    `;
+                    typeSpan.textContent = 'メイン';
+                } else {
+                    typeSpan.style.cssText = `
+                        background: #e0e0e0;
+                        color: #666;
+                        padding: 3px 10px;
+                        border-radius: 3px;
+                        font-size: 11px;
+                        font-weight: normal;
+                        display: inline-block;
+                    `;
+                    typeSpan.textContent = 'ピア';
+                }
+                typeCell.appendChild(typeSpan);
+
+                // URLセル
+                const urlCell = document.createElement('td');
+                urlCell.style.cssText = `
+                    padding: 10px 8px;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-size: 12px;
+                    color: #0066cc;
+                    word-break: break-all;
+                `;
+                urlCell.textContent = nodeUrl;
+
+                row.appendChild(numCell);
+                row.appendChild(typeCell);
+                row.appendChild(urlCell);
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+
+            tableContainer.appendChild(table);
+            container.appendChild(tableContainer);
+
+            // サマリー情報
+            const summary = document.createElement('div');
+            summary.style.cssText = `
+                margin: 0;
+                padding: 12px 15px;
+                background: #f9f9f9;
+                border-top: 1px solid #e0e0e0;
+                color: #666;
+                font-size: 12px;
+            `;
+            summary.innerHTML = `
+                <strong style="color: #555;">合計:</strong> ${nodeList.length}個のノード 
+                (メインノード: 1個、ピアノード: ${nodeList.length - 1}個)
+            `;
+            container.appendChild(summary);
+
+            return container;
+        }
+
         // アコーディオンの表示
         function renderAccordionFromObject(obj, containerId = 'accordion-container') {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
 
             Object.keys(obj).forEach(key => {
+                // debugInfoの場合、ノードネットワーク図をアコーディオンとして追加
+                if (key === 'debugInfo' && typeof obj[key] === 'object' && obj[key] !== null) {
+                    const nodeList = fetcher && fetcher.nodes && fetcher.nodes.length > 0 
+                        ? fetcher.nodes 
+                        : (obj[key].usedNode ? [obj[key].usedNode] : []);
+                    
+                    // ノードアコーディオンボタン
+                    const nodeBtn = document.createElement('button');
+                    nodeBtn.className = 'accordion';
+                    nodeBtn.textContent = 'Node';
+
+                    // ノードパネル
+                    const nodePanel = document.createElement('div');
+                    nodePanel.className = 'panel';
+                    const nodeNetwork = renderNodeNetwork(nodeList);
+                    nodePanel.appendChild(nodeNetwork);
+
+                    // トグル処理
+                    nodeBtn.addEventListener('click', () => {
+                        nodePanel.style.display = (nodePanel.style.display === 'block') ? 'none' : 'block';
+                        nodeBtn.classList.toggle('active');
+                    });
+
+                    container.appendChild(nodeBtn);
+                    container.appendChild(nodePanel);
+                }
+
                 // アコーディオンボタン
                 const btn = document.createElement('button');
                 btn.className = 'accordion';
@@ -368,9 +833,20 @@
                 // コンテンツパネル
                 const panel = document.createElement('div');
                 panel.className = 'panel';
-                panel.textContent = typeof obj[key] === 'object'
-                    ? JSON.stringify(obj[key], null, 2)
-                    : String(obj[key]);
+                
+                // header, debugInfo, その他のオブジェクトをテーブル形式で表示
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    const tableContainer = document.createElement('div');
+                    tableContainer.style.overflowX = 'auto';
+                    tableContainer.style.maxHeight = '600px';
+                    tableContainer.style.overflowY = 'auto';
+                    const table = renderObjectAsTable(obj[key]);
+                    tableContainer.appendChild(table);
+                    panel.appendChild(tableContainer);
+                } else {
+                    panel.classList.add('panel-text');
+                    panel.textContent = String(obj[key]);
+                }
 
                 // トグル処理
                 btn.addEventListener('click', () => {
@@ -407,8 +883,250 @@
 
 
 
+        // ============================================================
+        // 保存形式の判別とバイナリ保存モードの復元
+        //
+        // 形式はブロック0スロット15だけで決まる（docs/decoder-migration-guide.md §5）。
+        //   data: / BYNDE1. / U2FsdGVkX1 … Base64 保存モード。bundle の経路で読む
+        //   nftdrive;binary/…            … バイナリ保存モード。ここで読む
+        //
+        // バイナリのチャンクは TextDecoder に通してはいけない。0x80〜0xFF が
+        // 置換文字に化け、サイズは合うのに中身だけ壊れる。
+        // ============================================================
+
+        const ND_BINARY_PREFIX = 'nftdrive;binary/';
+
+        // 16進1文字 → 数値。範囲外は 0
+        const ND_HEX_NIBBLE = (() => {
+            const t = new Uint8Array(128);
+            for (let c = 0; c < 128; c++) {
+                t[c] = (c >= 48 && c <= 57) ? c - 48
+                    : (c >= 97 && c <= 102) ? c - 87
+                    : (c >= 65 && c <= 70) ? c - 55
+                    : 0;
+            }
+            return t;
+        })();
+
+        /** Symbol メッセージ（HEX）→ 生バイト列。先頭の 0x00 を落とす */
+        function ndHexToBytes(hex) {
+            if (!hex || hex.length < 4) return new Uint8Array(0);
+            const n = hex.length >> 1;
+            const out = new Uint8Array(n - 1);
+            for (let i = 2, j = 0; j < n - 1; i += 2, j++) {
+                out[j] = (ND_HEX_NIBBLE[hex.charCodeAt(i)] << 4) | ND_HEX_NIBBLE[hex.charCodeAt(i + 1)];
+            }
+            return out;
+        }
+
+        /** ndHexToBytes が返すバイト数。変換せずに長さだけ知りたいとき用 */
+        function ndHexByteLength(hex) {
+            return (!hex || hex.length < 4) ? 0 : (hex.length >> 1) - 1;
+        }
+
+        /** Symbol メッセージ（HEX）→ テキスト。メタデータとスロット15に使う */
+        function ndHexToText(hex) {
+            try { return new TextDecoder('utf-8').decode(ndHexToBytes(hex)); } catch (e) { return ''; }
+        }
+
+        /** アグリゲートをブロック番号で並べ、欠けを数える */
+        function ndSortBlocks(txResults) {
+            const blockMap = new Map();   // 同じ番号が重なることがある。Map で落とす
+            for (const tx of txResults || []) {
+                const inner = tx && tx.transaction && tx.transaction.transactions;
+                if (!inner || inner.length === 0) continue;
+                const n = Number(ndHexToText(inner[0] && inner[0].transaction && inner[0].transaction.message));
+                if (!Number.isNaN(n)) blockMap.set(n, inner);
+            }
+            const nums = Array.from(blockMap.keys()).sort((a, b) => a - b);
+            const missing = [];
+            if (nums.length > 0) {
+                for (let n = nums[0]; n <= nums[nums.length - 1]; n++) {
+                    if (!blockMap.has(n)) missing.push(n);
+                }
+            }
+            return { blocks: nums.map(n => blockMap.get(n)), nums, missing };
+        }
+
+        /**
+         * スロット15から保存形式を決める。
+         * @returns {{mode:'binary'|'base64'|'unknown', encrypted:false|'binary'|'bynde1'|'legacy', mimeType?:string, dataStart:number}}
+         */
+        function ndDetectFormat(slot15) {
+            const s = String(slot15 || '');
+            if (s.startsWith(ND_BINARY_PREFIX)) {
+                const rest = s.slice(ND_BINARY_PREFIX.length).trim();
+                const encrypted = rest === 'encrypted' || rest.startsWith('encrypted;');
+                return {
+                    mode: 'binary',
+                    encrypted: encrypted ? 'binary' : false,
+                    // 暗号化バイナリは中身が生のバイト列なので、元の MIME をここに残している
+                    mimeType: encrypted
+                        ? (rest.slice('encrypted;'.length).trim() || 'application/octet-stream')
+                        : (rest || 'application/octet-stream'),
+                    dataStart: 16
+                };
+            }
+            if (s.startsWith('BYNDE1.')) return { mode: 'base64', encrypted: 'bynde1', dataStart: 15 };
+            if (s.startsWith('U2FsdGVkX1')) return { mode: 'base64', encrypted: 'legacy', dataStart: 15 };
+            if (s.startsWith('data:')) return { mode: 'base64', encrypted: false, dataStart: 15 };
+            return { mode: 'unknown', encrypted: false, dataStart: 15 };
+        }
+
+        /** 並べ終えたブロックから形式を判別する。ブロック0が短すぎれば null */
+        function ndInspectBlocks(sorted) {
+            const block0 = sorted.blocks[0];
+            if (!block0 || block0.length <= 15) return null;
+            const slot15 = ndHexToText(block0[15] && block0[15].transaction && block0[15].transaction.message);
+            return ndDetectFormat(slot15);
+        }
+
+        /** ブロック0のスロット1〜14。暗号化されていても平文で読める */
+        function ndReadHeader(block0, mimeType) {
+            const txt = (i) => ndHexToText((block0[i] && block0[i].transaction && block0[i].transaction.message) || '');
+            const header = { mimeType, id: txt(2), serial: txt(3), owner: txt(1), message: txt(4) };
+            for (let k = 1; k <= 10; k++) header['extension_' + k] = txt(4 + k);
+            return header;
+        }
+
+        /**
+         * バイナリ保存モードのレコードを復元する。
+         * 総長を先に数えて一度だけ確保する。チャンクを配列に溜めると
+         * 数十万個の Uint8Array の器ぶん余計に食う。
+         */
+        function ndRestoreBinary(sorted, format) {
+            const { blocks, nums, missing } = sorted;
+            const start = (b) => (b === 0 ? 16 : 1);
+
+            let total = 0;
+            for (let b = 0; b < blocks.length; b++) {
+                for (let v = start(b); v < blocks[b].length; v++) {
+                    total += ndHexByteLength(blocks[b][v] && blocks[b][v].transaction && blocks[b][v].transaction.message);
+                }
+            }
+            const bytes = new Uint8Array(total);
+            let off = 0;
+            for (let b = 0; b < blocks.length; b++) {
+                for (let v = start(b); v < blocks[b].length; v++) {
+                    const c = ndHexToBytes(blocks[b][v] && blocks[b][v].transaction && blocks[b][v].transaction.message);
+                    if (c.length) { bytes.set(c, off); off += c.length; }
+                }
+            }
+
+            const min = nums[0], max = nums[nums.length - 1];
+            return {
+                header: ndReadHeader(blocks[0], format.mimeType),
+                bytes,
+                format,
+                debugInfo: {
+                    size: total,
+                    // displayLostTransactionAnalysis が読む形。Base64 の経路と揃える
+                    transactionContinuity: {
+                        transactionArrayCount: blocks.length,
+                        messageNumbers: nums,
+                        missingMessages: missing,
+                        messageRange: { min, max },
+                        isComplete: missing.length === 0,
+                        completenessPercentage: (nums.length / (max - min + 1) * 100).toFixed(2)
+                    }
+                }
+            };
+        }
+
+        /**
+         * 取得したトランザクションから中身を取り出す。
+         * バイナリ保存モードはここで復元し、それ以外は bundle に任せる。
+         * @returns {Promise<{kind:'binary'|'base64', view:object, rec?:object, nft?:object}>}
+         *   view はアコーディオンに出す形（header / data / debugInfo）
+         */
+        async function restoreRecord(txResults) {
+            const sorted = ndSortBlocks(txResults);
+            const format = ndInspectBlocks(sorted);
+            if (format && format.mode === 'binary') {
+                const rec = ndRestoreBinary(sorted, format);
+                // バイト列をそのまま表に渡すと、1バイトずつ行になって固まる
+                const summary = `（バイナリ保存モード${format.encrypted ? '・暗号化' : ''}・${formatBytes(rec.bytes.length)}）`;
+                return { kind: 'binary', rec, view: { header: rec.header, data: summary, debugInfo: rec.debugInfo } };
+            }
+            const nft = await fetcher.getNFTDriveData(txResults, { debugger: true });
+            return { kind: 'base64', nft, view: nft };
+        }
+
+        /** restoreRecord の結果を描く */
+        function previewRecord(record, containerElement) {
+            if (record.kind === 'binary') return binaryPreview(record.rec, containerElement);
+            return base64Preview(record.nft.header, record.nft.data, containerElement);
+        }
+
+        /** バイナリ保存モードのプレビュー */
+        async function binaryPreview(rec, containerElement) {
+            if (rec.format.encrypted) {
+                handleEncryptedBinary(rec, containerElement);
+                return;
+            }
+            renderPreviewBytes(rec.header.mimeType, rec.bytes, containerElement);
+
+            // OpenSea サムネイル付き音声などの特殊ヘッダー。
+            // 失敗しても本体のプレビューは出ているので、それを消さない
+            try {
+                const headerType = await fetcher.analyzeSpecialNFTDriveHeader(rec.header);
+                if (headerType && !headerType.isNomal) {
+                    await handleSpecialNFTDriveHeader(headerType, rec.header, null, containerElement);
+                }
+            } catch (e) {
+                console.warn("特殊ヘッダーの処理に失敗:", e);
+            }
+        }
+
+        /** 赤字の知らせ。中身はチェーン由来のことがあるので textContent で入れる */
+        function showPreviewError(containerElement, message, detail) {
+            containerElement.innerHTML = '';
+            const p = document.createElement('p');
+            p.style.color = 'red';
+            p.textContent = 'エラー：' + message;
+            containerElement.appendChild(p);
+            if (detail) {
+                const d = document.createElement('p');
+                d.style.cssText = 'font-size:0.85em; color:#666; word-break:break-all;';
+                d.textContent = detail;
+                containerElement.appendChild(d);
+            }
+        }
+
+        /**
+         * 判別できない形式。推測で復元すると壊れた中身を「読めた」ように見せてしまう。
+         * 「壊れている」ではなく「未対応」と言う
+         */
+        function showUnsupportedFormat(containerElement, head) {
+            containerElement.innerHTML = '';
+            const box = document.createElement('div');
+            box.style.cssText = 'border:2px solid #999; border-radius:8px; padding:18px; max-width:640px; line-height:1.8;';
+            const title = document.createElement('p');
+            title.style.cssText = 'font-weight:bold; margin:0 0 8px;';
+            title.textContent = 'このビューアはこの保存形式に対応していません';
+            const body = document.createElement('p');
+            body.style.margin = '0 0 8px';
+            body.textContent = 'データが壊れているとは限りません。BEYOND 本体で開いてください。';
+            box.append(title, body);
+            if (head) {
+                const d = document.createElement('p');
+                d.style.cssText = 'font-size:0.85em; color:#666; word-break:break-all; margin:0;';
+                d.textContent = 'データ先頭: ' + head;
+                box.appendChild(d);
+            }
+            containerElement.appendChild(box);
+        }
+
         // Base64プレビュー関数
-        function base64Preview(header, base64Data, containerElement) {
+        async function base64Preview(header, base64Data, containerElement) {
+
+            // ★ 最初のheader状態をログ出力
+            console.log("=== base64Preview 開始時のheader ===");
+            console.log("header（引数で受け取った直後）:", JSON.parse(JSON.stringify(header)));
+            console.log("  - mimeType:", header.mimeType);
+            console.log("  - id:", header.id);
+            console.log("  - owner:", header.owner);
+            console.log("  - message:", header.message);
 
             // デバッグ情報をログ出力
             console.log("=== base64Preview デバッグ情報 ===");
@@ -419,14 +1137,18 @@
 
 
 
-            // 暗号化データかどうかを判定（Salt付きBase64の特徴：U2FsdGVkX1で始まる）
-            const isEncrypted = base64Data.startsWith('U2FsdGVkX1');
+            // 暗号化データかどうかを判定
+            //   新形式: BYNDE1. で始まる（キーラッピング封筒）
+            //   旧形式: U2FsdGVkX1 で始まる（crypto-js の Salt付きBase64）
+            const isEncrypted = typeof base64Data === 'string'
+                && (base64Data.startsWith('BYNDE1.') || base64Data.startsWith('U2FsdGVkX1'));
 
             if (isEncrypted) {
-                console.log("暗号化データが検出されました。パスワードを入力してください。");
-                handleEncryptedData(base64Data, containerElement);
+                console.log("暗号化データが検出されました。");
+                handleEncryptedData(header, base64Data, containerElement);
                 return;
             }
+
 
 
 
@@ -454,40 +1176,648 @@
             // 通常のBase64処理
             const match = base64Data.match(/^data:([^;]+);base64,(.*)$/);
             if (!match) {
-                containerElement.innerHTML = `<p style="color: red;">エラー：有効なBase64データが見つかりません<br/>
-                データ先頭: ${base64Data.substring(0, 100)}</p>`;
+                showUnsupportedFormat(containerElement, base64Data.substring(0, 100));
                 return;
             }
 
             renderPreview(match[1], match[2], containerElement);
+
+            // NFTDriveヘッダーの特殊解析結果をログ出力
+            const headerType = await fetcher.analyzeSpecialNFTDriveHeader(header);
+            if (headerType.isNomal) {
+                console.log("標準的なNFTDriveデータ形式です。");
+                return;
+            } else {
+                console.log("headerLog", headerType);
+                await handleSpecialNFTDriveHeader(headerType, header, match[2], containerElement);
+            }
+
         }
 
-        // 暗号化データを処理する関数
-        function handleEncryptedData(encryptedBase64, containerElement) {
-            const password = prompt("このNFTDriveデータは暗号化されています。\nパスワードを入力してください：");
 
-            if (password === null) {
-                containerElement.innerHTML = `<p style="color: blue;">データの復号化がキャンセルされました。</p>`;
+
+        //NFTDrive特殊ヘッダー毎の処理
+        async function handleSpecialNFTDriveHeader(headerType, header, base64Data, containerElement) {
+            //ヘッダー情報がない場合はスキップ
+            if (headerType) {
+                console.log("headerLog", headerType);
+                switch (headerType.type) {
+                    case 'Unknown':
+                        console.log("未知のNFTDriveデータ形式です。");
+                        break;
+                    case 'Standard':
+                        console.log("標準的なNFTDriveデータ形式です。");
+                        break;
+                    case 'OpenSeaAudioWithThumbnail':
+                        console.log("OpenSeaサムネイル付きオーディオファイル形式です。");
+                        // OpenSeaサムネイル付きオーディオファイルの処理
+                        //headerのmetadataからサムネイルを抽出して表示
+                        const thumbnailDataAddress = header.extension_5;
+                        if (thumbnailDataAddress) {
+                            // ★ メインのプログレスバー非表示タイマーをキャンセル
+                            if (progressHideTimer) {
+                                clearTimeout(progressHideTimer);
+                                progressHideTimer = null;
+                            }                           
+                            // ★ プログレスバーを再表示
+                            const progressContainer = document.getElementById('progressContainer');
+                            const progressBar = document.getElementById('progressBar');
+                            const progressMessage = document.getElementById('progressMessage');
+                            const progressDetails = document.getElementById('progressDetails');
+                            
+                            // プログレスをリセット
+                            fetcher.resetProgress();
+                            
+                            // 確実に表示
+                            progressContainer.classList.add('show');
+                            
+                            // ★ サムネイル用プログレス監視タイマー
+                            let thumbnailProgressTimer = setInterval(() => {
+                                const progress = fetcher.getProgress();
+                                
+                                // プログレスバーを更新
+                                progressBar.style.width = progress.percentage + '%';
+                                progressBar.textContent = progress.percentage + '%';
+                                progressMessage.textContent = progress.message || 'サムネイルを読み込み中...';
+                                
+                                // 詳細情報
+                                let detailText = '';
+                                
+                                // 取得件数
+                                if (progress.details && progress.details.total > 0) {
+                                    detailText = `${progress.details.fetched} / ${progress.details.total} 件取得済み`;
+                                }
+                                
+                                // 経過時間
+                                if (progress.startTime) {
+                                    const elapsedSeconds = Math.floor((Date.now() - progress.startTime) / 1000);
+                                    const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+                                    const elapsedSecs = elapsedSeconds % 60;
+                                    const elapsedText = elapsedMinutes > 0
+                                        ? `${elapsedMinutes}分${elapsedSecs}秒`
+                                        : `${elapsedSecs}秒`;
+                                    detailText += detailText ? ` | 経過: ${elapsedText}` : `経過: ${elapsedText}`;
+                                }
+                                
+                                // 推定残り時間
+                                if (progress.estimatedTimeRemaining !== null && progress.estimatedTimeRemaining > 0) {
+                                    const minutes = Math.floor(progress.estimatedTimeRemaining / 60);
+                                    const seconds = progress.estimatedTimeRemaining % 60;
+                                    const timeText = minutes > 0
+                                        ? `約${minutes}分${seconds}秒`
+                                        : `約${seconds}秒`;
+                                    detailText += detailText ? ` | 残り: ${timeText}` : `残り: ${timeText}`;
+                                }
+                                
+                                progressDetails.textContent = detailText;
+                            }, 100);
+                            
+                            //サムネイルデータを取得して表示
+                            fetcher.fetchAllAggregatesStable(thumbnailDataAddress, {
+                                indexNodeIndex: 0,
+                                indexPageSize: 100,
+                                indexTypes: [16705], // 必要なら [16705, 16961]
+                                concurrency: 2,
+                                retries: 3
+                            }).then(async (result) => {
+                                // ★ 100%表示を確実にするため、短い遅延を入れる
+                                await new Promise(resolve => setTimeout(resolve, 300));
+                                
+                                await restoreRecord(result)
+                                    .then(async (thumbRecord) => {
+
+                                        // サムネイルプレビュー表示
+                                        const thumbnailContainer = document.createElement('div');
+                                        thumbnailContainer.style.marginBottom = '15px';
+                                        containerElement.prepend(thumbnailContainer);
+                                        previewRecord(thumbRecord, thumbnailContainer);
+                                        
+                                        // ★ サムネイルデータのアコーディオン表示
+                                        const accordionContainer = document.getElementById('accordion-container');
+                                        if (accordionContainer) {
+                                            // サムネイル情報セクションのヘッダーを追加
+                                            const thumbnailHeader = document.createElement('h3');
+                                            thumbnailHeader.textContent = '🖼️ サムネイルデータ情報';
+                                            thumbnailHeader.style.marginTop = '20px';
+                                            thumbnailHeader.style.color = '#555';
+                                            accordionContainer.appendChild(thumbnailHeader);
+                                            
+                                            // サムネイルアコーディオンコンテナを作成
+                                            const thumbnailAccordionContainer = document.createElement('div');
+                                            thumbnailAccordionContainer.id = 'accordion-container-thumbnail';
+                                            accordionContainer.appendChild(thumbnailAccordionContainer);
+                                            
+                                            // サムネイルデータのアコーディオンを表示
+                                            renderAccordionFromObject(thumbRecord.view, 'accordion-container-thumbnail');
+                                        }
+                                        
+                                        // ★ プログレス完了
+                                        clearInterval(thumbnailProgressTimer);
+                                        setTimeout(() => {
+                                            progressContainer.classList.remove('show');
+                                        }, 500);
+
+                                    })
+                                    .catch(err => {
+                                        console.error("サムネイルデータ生成エラー:", err);
+                                        clearInterval(thumbnailProgressTimer);
+                                        progressContainer.classList.remove('show');
+                                    });
+                            }).catch(err => {
+                                console.error("サムネイルトランザクション取得エラー:", err);
+                                clearInterval(thumbnailProgressTimer);
+                                progressContainer.classList.remove('show');
+                            });
+
+                        } else {
+                            console.log("サムネイルデータアドレスが見つかりません。");
+                        }
+
+                        break;
+                    default:
+                        console.log("その他のNFTDriveデータ形式:", headerType.type);
+                }
+
+            } else {
+
+                console.log("NFTDriveヘッダー情報がありません。");
+            }
+        }
+
+        // ============================================================
+        // BEYOND 封筒フォーマット（BYNDE1 / BYNDB1）の復号 — password スロットのみ
+        //
+        // 本体はファイルごとのランダムな File Key で暗号化されており、その鍵が
+        // 複数の Key Slot に別々の鍵で包まれている。このビューアが開けるのは
+        // password スロットだけで、beyond-address スロットは開けない。
+        // 復旧フレーズや Address Master Key をここへ入力させてはいけない。
+        //
+        // 封筒は2種類ある（docs/decoder-migration-guide.md §8・§9）。
+        //   BYNDE1 … テキスト。Base64 保存モードと、古い暗号化バイナリ
+        //   BYNDB1 … バイト列。今の暗号化バイナリ
+        // 中身の組み立ては同じで、AAD に入る形式名だけが違う。
+        // ============================================================
+
+        const BYND_ENVELOPE_PREFIX = 'BYNDE1.';
+        const BYND_LEGACY_PREFIX = 'U2FsdGVkX1';
+
+        function byndIsEnvelope(text) {
+            return typeof text === 'string' && text.startsWith(BYND_ENVELOPE_PREFIX);
+        }
+        function byndIsLegacy(text) {
+            return typeof text === 'string' && text.trimStart().startsWith(BYND_LEGACY_PREFIX);
+        }
+
+        function byndB64ToBytes(b64) {
+            const bin = atob(String(b64).replace(/-/g, '+').replace(/_/g, '/'));
+            const out = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+            return out;
+        }
+
+        /** 「4バイトのビッグエンディアン長 ‖ 本体」を並べる正規エンコード */
+        function byndEncodeFields(...parts) {
+            const enc = new TextEncoder();
+            const bufs = parts.map(p => (typeof p === 'string' ? enc.encode(p) : p));
+            const total = bufs.reduce((n, b) => n + 4 + b.length, 0);
+            const out = new Uint8Array(total);
+            const view = new DataView(out.buffer);
+            let off = 0;
+            for (const b of bufs) {
+                view.setUint32(off, b.length, false);
+                off += 4;
+                out.set(b, off);
+                off += b.length;
+            }
+            return out;
+        }
+
+        /** キー順を再帰的に固定した JSON。AAD の計算に使う（Main 側と一致させること） */
+        function byndCanonicalJson(value) {
+            if (value === null || typeof value !== 'object') return JSON.stringify(value);
+            if (Array.isArray(value)) return '[' + value.map(byndCanonicalJson).join(',') + ']';
+            return '{' + Object.keys(value).sort()
+                .map(k => JSON.stringify(k) + ':' + byndCanonicalJson(value[k])).join(',') + '}';
+        }
+
+        const BYND_UNSUPPORTED_MSG = "この暗号化形式には対応していません。BEYOND を更新してください。";
+        const BYND_BROKEN_MSG = "暗号化データの形式が壊れています。";
+
+        /** 封筒のヘッダ JSON を確かめ、復号に使う形へまとめる */
+        function byndEnvelopeFromHeader(header, format, payload) {
+            if (!header || header.format !== format || typeof header.version !== 'number') {
+                throw new Error(BYND_BROKEN_MSG);
+            }
+            // 自分より新しい版は読まない。読めたふりをすると壊れた中身を出してしまう
+            if (header.version > 1) throw new Error(BYND_UNSUPPORTED_MSG);
+            if (!header.cipher || !header.cipher.iv) throw new Error(BYND_BROKEN_MSG);
+            if (payload.length < 16) throw new Error(BYND_BROKEN_MSG);
+            return {
+                format,
+                fileId: header.fileId,
+                keySlots: Array.isArray(header.keySlots) ? header.keySlots : [],
+                iv: byndB64ToBytes(header.cipher.iv),
+                // WebCrypto の AES-GCM は暗号文末尾にタグが付いている前提で扱える
+                payload
+            };
+        }
+
+        function byndParseEnvelope(text) {
+            const parts = String(text).split('.');
+            if (parts.length !== 3) throw new Error(BYND_BROKEN_MSG);
+
+            let header;
+            try {
+                header = JSON.parse(new TextDecoder().decode(byndB64ToBytes(parts[1])));
+            } catch (e) {
+                throw new Error(BYND_BROKEN_MSG);
+            }
+            return byndEnvelopeFromHeader(header, 'BYNDE1', byndB64ToBytes(parts[2]));
+        }
+
+        /** 先頭6バイトが ASCII の BYNDB1 か */
+        function byndIsBinaryEnvelope(bytes) {
+            return !!bytes && bytes.length >= 6
+                && bytes[0] === 0x42 && bytes[1] === 0x59 && bytes[2] === 0x4E
+                && bytes[3] === 0x44 && bytes[4] === 0x42 && bytes[5] === 0x31;
+        }
+
+        /**
+         * BYNDB1 を読む。
+         *   マジック6 ‖ 版1 ‖ ヘッダ長4（BE）‖ ヘッダ JSON ‖ 暗号文‖タグ
+         */
+        function byndParseBinaryEnvelope(bytes) {
+            if (!byndIsBinaryEnvelope(bytes) || bytes.length < 11) throw new Error(BYND_BROKEN_MSG);
+            if (bytes[6] > 1) throw new Error(BYND_UNSUPPORTED_MSG);
+
+            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            const headerLen = view.getUint32(7, false);
+            // 壊れた長さで巨大な確保をさせない
+            if (headerLen > 1048576 || bytes.length < 11 + headerLen) throw new Error(BYND_BROKEN_MSG);
+
+            let header;
+            try {
+                header = JSON.parse(new TextDecoder().decode(bytes.subarray(11, 11 + headerLen)));
+            } catch (e) {
+                throw new Error(BYND_BROKEN_MSG);
+            }
+            return byndEnvelopeFromHeader(header, 'BYNDB1', bytes.subarray(11 + headerLen));
+        }
+
+        /**
+         * password スロット1本を開いて File Key を取り出す。
+         * 開けなければ null（別のスロットが当たりかもしれない）。
+         */
+        async function byndOpenPasswordSlot(env, slot, password) {
+            if (!slot.kdf || slot.kdf.algorithm !== 'pbkdf2-sha256') return null;
+
+            // 1. パスワードからスロットの鍵を導出
+            const keyMaterial = await crypto.subtle.importKey(
+                'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+            const slotKey = await crypto.subtle.deriveKey(
+                {
+                    name: 'PBKDF2',
+                    salt: byndB64ToBytes(slot.kdf.salt),
+                    iterations: slot.kdf.iterations,
+                    hash: 'SHA-256'
+                },
+                keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+
+            // 2. スロットを開いて File Key を取り出す。
+            //    AAD の形式名が封筒ごとに違うので、BYNDE1 の中身を BYNDB1 の器へ
+            //    移しても開かない（設計どおり）
+            const { wrap, ...slotParams } = slot;
+            const slotAad = byndEncodeFields(
+                'BEYOND-FILE-SLOT-v1', env.format, '1', env.fileId, byndCanonicalJson(slotParams));
+
+            const wrapped = new Uint8Array([
+                ...byndB64ToBytes(wrap.ciphertext), ...byndB64ToBytes(wrap.tag)
+            ]);
+            try {
+                return new Uint8Array(await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: byndB64ToBytes(wrap.iv), additionalData: slotAad },
+                    slotKey, wrapped));
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /** 封筒に password スロットがあるか */
+        function byndHasPasswordSlot(env) {
+            return env.keySlots.some(s => s && s.type === 'password');
+        }
+
+        /**
+         * 封筒をパスワードで開き、平文のバイト列を返す。
+         *
+         * @param {object} env byndParseEnvelope / byndParseBinaryEnvelope の結果
+         * @param {string} password
+         * @param {(done:number, total:number) => void} [onProgress]
+         *   スロット1本ぶんの鍵導出に約0.4秒かかる。本数が多いと待たせるので進みを知らせる
+         * @returns {Promise<Uint8Array>}
+         */
+        async function byndDecryptEnvelope(env, password, onProgress) {
+            // password スロットは複数入っていることがある。渡す相手ごとに
+            // 別のパスワードを登録できるため。どれが当たりかはソルトが違う
+            // 都合で開けるまで分からないので、順に試す。
+            const slots = env.keySlots.filter(s => s && s.type === 'password');
+            if (slots.length === 0) throw new Error("このデータにはパスワード用の鍵が含まれていません。");
+
+            const supported = slots.filter(s => s.kdf && s.kdf.algorithm === 'pbkdf2-sha256');
+            if (supported.length === 0) {
+                throw new Error(BYND_UNSUPPORTED_MSG);
+            }
+
+            let fileKeyBytes = null;
+            let tried = 0;
+            for (const slot of supported) {
+                if (onProgress) onProgress(tried, supported.length);
+                fileKeyBytes = await byndOpenPasswordSlot(env, slot, password);
+                tried++;
+                if (fileKeyBytes) break;
+            }
+            if (!fileKeyBytes) {
+                throw new Error("パスワードが正しくないか、データが壊れています。");
+            }
+
+            // 3. File Key で本体を復号
+            const fileKey = await crypto.subtle.importKey(
+                'raw', fileKeyBytes, { name: 'AES-GCM' }, false, ['decrypt']);
+            const bodyAad = byndEncodeFields('BEYOND-FILE-BODY-v1', env.format, '1', env.fileId);
+
+            let plain;
+            try {
+                plain = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv: env.iv, additionalData: bodyAad }, fileKey, env.payload);
+            } catch (e) {
+                throw new Error("データの整合性を確認できませんでした。破損している可能性があります。");
+            } finally {
+                fileKeyBytes.fill(0);
+            }
+            return new Uint8Array(plain);
+        }
+
+        /** BYNDE1（テキスト）を開いて、平文を文字列で返す。Base64 保存モードでは dataURL */
+        async function byndDecryptWithPassword(text, password, onProgress) {
+            const plain = await byndDecryptEnvelope(byndParseEnvelope(text), password, onProgress);
+            return new TextDecoder().decode(plain);
+        }
+
+        /** beyond-address スロットしか無い場合の案内 */
+        function byndShowBeyondOnlyNotice(containerElement) {
+            containerElement.innerHTML = `
+                <div style="border:2px solid #2f80ed;border-radius:8px;padding:18px;max-width:640px;margin:20px auto;line-height:1.8;">
+                    <p style="font-weight:700;color:#2f80ed;margin:0 0 10px;">
+                        このデータは BEYOND 本体で開いてください
+                    </p>
+                    <p style="margin:0 0 10px;">
+                        このファイルは記録アドレスに紐づく鍵で暗号化されており、
+                        パスワードでは開けません。
+                    </p>
+                    <p style="margin:0 0 10px;">
+                        BEYOND でこの記録アドレスのファイル暗号化をアンロックすると閲覧できます。
+                    </p>
+                    <p style="margin:0;font-size:0.9em;color:#c0392b;">
+                        復旧フレーズをこのページに入力しないでください。
+                        このビューアは復旧フレーズを扱いません。
+                    </p>
+                </div>`;
+        }
+
+        /**
+         * パスワード入力欄を出す。違っていても欄を残し、打ち直せるようにする。
+         *
+         * @param {HTMLElement} containerElement
+         * @param {string|null} note 補足
+         * @param {(password:string, setStatus:(text:string)=>void) => Promise<void>} onSubmit
+         *   開けたら中身を描く。開けなければ例外を投げる。そのメッセージを欄の下に出す
+         */
+        function showPasswordForm(containerElement, note, onSubmit) {
+            containerElement.innerHTML = '';
+            const box = document.createElement('div');
+            box.style.cssText = 'text-align:center; padding:20px; max-width:480px;';
+
+            const title = document.createElement('p');
+            title.style.cssText = 'font-weight:bold; margin:0 0 8px;';
+            title.textContent = '🔒 このNFTDriveデータは暗号化されています';
+            box.appendChild(title);
+            if (note) {
+                const p = document.createElement('p');
+                p.style.cssText = 'font-size:0.9em; color:#555; margin:0 0 12px;';
+                p.textContent = note;
+                box.appendChild(p);
+            }
+
+            const form = document.createElement('form');
+            form.style.cssText = 'display:flex; gap:8px; justify-content:center;';
+            const input = document.createElement('input');
+            input.type = 'password';
+            input.placeholder = 'パスワード';
+            input.autocomplete = 'off';
+            input.style.cssText = 'flex:1; padding:6px 8px;';
+            const button = document.createElement('button');
+            button.type = 'submit';
+            button.textContent = '復号する';
+            button.style.cssText = 'padding:6px 14px;';
+            form.append(input, button);
+
+            const status = document.createElement('p');
+            status.style.cssText = 'min-height:1.5em; font-size:0.9em; color:#555; margin:10px 0 0;';
+            box.append(form, status);
+            containerElement.appendChild(box);
+            input.focus();
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!input.value) {
+                    status.style.color = 'red';
+                    status.textContent = 'パスワードを入力してください。';
+                    return;
+                }
+                input.disabled = button.disabled = true;
+                status.style.color = '#555';
+                status.textContent = 'パスワードを確認しています…';
+                try {
+                    await onSubmit(input.value, (text) => { status.textContent = text; });
+                } catch (err) {
+                    input.disabled = button.disabled = false;
+                    input.select();
+                    status.style.color = 'red';
+                    status.textContent = err.message || '復号に失敗しました。';
+                }
+            });
+        }
+
+        /** 鍵導出の進みを入力欄の下に出す。外れのスロットは1本あたり約0.4秒かかる */
+        function slotProgressReporter(setStatus) {
+            return (done, total) => {
+                setStatus(total > 1
+                    ? `パスワードを確認しています…（${done + 1} / ${total}）`
+                    : 'パスワードを確認しています…');
+            };
+        }
+
+        const SHARE_PASSWORD_NOTE = '記録者から受け取った共有パスワードを入力してください。';
+
+        // 暗号化データ（Base64 保存モード）を処理する関数
+        // 対応する形式は3つ:
+        //   1. 旧 CryptoJS パスフレーズ形式（U2FsdGVkX1…）
+        //   2. 新形式の password スロット付き（BYNDE1.…）
+        //   3. 新形式で password スロットが無い → BEYOND 本体で開くよう案内
+        async function handleEncryptedData(header, encryptedBase64, containerElement) {
+            if (byndIsEnvelope(encryptedBase64)) {
+                let env;
+                try {
+                    env = byndParseEnvelope(encryptedBase64);
+                } catch (e) {
+                    showPreviewError(containerElement, e.message);
+                    return;
+                }
+                if (!byndHasPasswordSlot(env)) {
+                    byndShowBeyondOnlyNotice(containerElement);
+                    return;
+                }
+                showPasswordForm(containerElement, SHARE_PASSWORD_NOTE, async (pw, setStatus) => {
+                    const plain = await byndDecryptEnvelope(env, pw, slotProgressReporter(setStatus));
+                    renderDecryptedData(header, new TextDecoder().decode(plain), containerElement);
+                });
                 return;
             }
 
-            try {
-                // CryptoJS.AES.decryptを使用して復号化
-                const decrypted = CryptoJS.AES.decrypt(encryptedBase64, password);
-                const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
-
+            // 旧形式
+            showPasswordForm(containerElement, null, async (pw) => {
+                let decryptedString = '';
+                try {
+                    decryptedString = CryptoJS.AES.decrypt(encryptedBase64, pw).toString(CryptoJS.enc.Utf8);
+                } catch (e) {
+                    // 鍵が違うと UTF-8 として読めずに例外になることがある
+                }
                 if (!decryptedString) {
                     throw new Error("復号化に失敗しました。パスワードが正しくない可能性があります。");
                 }
+                renderDecryptedData(header, decryptedString, containerElement);
+            });
+        }
 
-                // 復号化されたデータがBase64形式かどうかを判定
+        /**
+         * 暗号化バイナリ（nftdrive;binary/encrypted;<MIME>）。
+         *
+         * 封筒は先頭バイトで見分ける。今の記録は BYNDB1、古い記録は BYNDE1 の
+         * 文字列がそのままバイト列で入っている。BYNDE1 の7バイト目は必ず '.'、
+         * BYNDB1 の7バイト目は版（0x01）なので取り違えない。
+         * どちらも平文は生のバイト列で、MIME はスロット15から取る。
+         */
+        function handleEncryptedBinary(rec, containerElement) {
+            let env;
+            try {
+                if (byndIsBinaryEnvelope(rec.bytes)) {
+                    env = byndParseBinaryEnvelope(rec.bytes);
+                } else {
+                    const text = new TextDecoder().decode(rec.bytes.subarray(0, 7));
+                    if (!byndIsEnvelope(text)) throw new Error(BYND_UNSUPPORTED_MSG);
+                    env = byndParseEnvelope(new TextDecoder().decode(rec.bytes));
+                }
+            } catch (e) {
+                showPreviewError(containerElement, e.message);
+                return;
+            }
+            if (!byndHasPasswordSlot(env)) {
+                byndShowBeyondOnlyNotice(containerElement);
+                return;
+            }
+            showPasswordForm(containerElement, SHARE_PASSWORD_NOTE, async (pw, setStatus) => {
+                const plain = await byndDecryptEnvelope(env, pw, slotProgressReporter(setStatus));
+                renderPreviewBytes(rec.header.mimeType, plain, containerElement);
+            });
+        }
+
+        // 復号後の共通処理（header の更新とプレビュー描画）
+        function renderDecryptedData(header, decryptedString, containerElement) {
+            try {
+                console.log("✓ 復号化成功");
+                console.log("復号化されたデータ長:", decryptedString.length);
+                console.log("復号化されたデータ先頭100文字:", decryptedString.substring(0, 100));
+                console.log("元のheader（復号化前）:", JSON.stringify(header));
+
+                // ★ 復号化されたデータから正しいMIMEタイプを抽出してheaderを更新
                 const match = decryptedString.match(/^data:([^;]+);base64,(.*)$/);
-                if (!match) {
+                let actualMimeType = "application/octet-stream";
+                let actualBase64Data = decryptedString;
+                
+                if (match) {
+                    actualMimeType = match[1];
+                    actualBase64Data = match[2];
+                    
+                    // ★ 暗号化データの場合、復号化後のMIMEタイプで新しいheaderオブジェクトを作成
+                    // チェーン上のheader情報（既に取得済み）に復号化後のMIMEタイプを追加
+                    const decryptedHeader = {
+                        mimeType: actualMimeType, // 復号化後の実際のMIMEタイプ
+                        id: header.id || null,
+                        serial: header.serial || null,
+                        owner: header.owner || null,
+                        message: header.message || null, // チェーン上の元のメッセージを保持
+                        extension_1: header.extension_1 || null,
+                        extension_2: header.extension_2 || null,
+                        extension_3: header.extension_3 || null,
+                        extension_4: header.extension_4 || null,
+                        extension_5: header.extension_5 || null,
+                        extension_6: header.extension_6 || null,
+                        extension_7: header.extension_7 || null,
+                        extension_8: header.extension_8 || null,
+                        extension_9: header.extension_9 || null,
+                        extension_10: header.extension_10 || null
+                    };
+                    
+                    console.log("✓ 復号化後のheader:", JSON.stringify(decryptedHeader));
+                    
+                    // headerオブジェクトを完全に置き換え
+                    Object.assign(header, decryptedHeader);
+                    console.log("✓ headerオブジェクトを更新:", actualMimeType);
+                    console.log("=== Object.assign後の最終header ===");
+                    console.log("header（最終状態）:", JSON.parse(JSON.stringify(header)));
+                    console.log("  - mimeType:", header.mimeType);
+                    console.log("  - id:", header.id);
+                    console.log("  - owner:", header.owner);
+                    console.log("  - message:", header.message);
+                    console.log("  - extension_1:", header.extension_1);
+                }
+
+                // ★ 復号化後、アコーディオンに表示されているheaderデータを更新
+                const accordionContainer = document.getElementById('accordion-container');
+                if (accordionContainer) {
+                    // headerセクションのみを再描画
+                    const headerAccordion = Array.from(accordionContainer.children).find(
+                        child => child.classList.contains('accordion') && child.textContent === 'header'
+                    );
+                    
+                    if (headerAccordion) {
+                        // headerパネルを見つける
+                        const headerPanel = headerAccordion.nextElementSibling;
+                        if (headerPanel && headerPanel.classList.contains('panel')) {
+                            // ヘッダーパネルの内容を再生成（更新されたheaderで）
+                            headerPanel.innerHTML = '';
+                            const tableContainer = document.createElement('div');
+                            tableContainer.style.overflowX = 'auto';
+                            tableContainer.style.maxHeight = '600px';
+                            tableContainer.style.overflowY = 'auto';
+                            const table = renderObjectAsTable(header);
+                            tableContainer.appendChild(table);
+                            headerPanel.appendChild(tableContainer);
+                            
+                            console.log("✓ headerアコーディオンを再描画しました（更新されたheader）");
+                            console.log("  - mimeType:", header.mimeType);
+                            console.log("  - message:", header.message);
+                        }
+                    }
+                }
+
+                // 復号化されたデータでプレビュー表示
+                if (match) {
+                    // MIMEタイプ付きの場合
+                    renderPreview(actualMimeType, actualBase64Data, containerElement);
+                } else {
                     // 復号化されたデータがそのままBase64の場合
                     renderPreview("application/octet-stream", decryptedString, containerElement);
-                } else {
-                    // MIMEタイプ付きの場合
-                    renderPreview(match[1], match[2], containerElement);
                 }
 
             } catch (error) {
@@ -542,6 +1872,43 @@
             for (let i = 0; i < binaryData.length; i++) {
                 byteArray[i] = binaryData.charCodeAt(i);
             }
+            renderPreviewBytes(mimeType, byteArray, containerElement);
+        }
+
+        /** 整形済みテキストの入れ物。JSON として読めれば整形して出す */
+        function renderTextBlock(text, tryJson) {
+            const element = document.createElement("div");
+            element.style.padding = "15px";
+            element.style.backgroundColor = "#f9f9f9";
+            element.style.borderRadius = "5px";
+            element.style.whiteSpace = "pre-wrap";
+            element.style.wordWrap = "break-word";
+            element.style.fontFamily = "monospace";
+            element.style.fontSize = "12px";
+            element.style.maxHeight = "80vh";
+            element.style.overflow = "auto";
+            element.style.border = "1px solid #ddd";
+            element.textContent = text;
+            if (tryJson) {
+                try {
+                    element.textContent = JSON.stringify(JSON.parse(text), null, 2);
+                    element.style.backgroundColor = "#f5f5f5";
+                } catch (e) { /* JSON でなければそのまま */ }
+            }
+            return element;
+        }
+
+        /**
+         * バイト列を MIME に応じて描く。
+         * バイナリ保存モードは文字列を経由せずここへ来る。dataURL にすると
+         * V8 の文字列上限（約512MB）に当たるため
+         */
+        function renderPreviewBytes(mimeType, byteArray, containerElement) {
+            mimeType = String(mimeType || '').toLowerCase().split(';')[0].trim();
+            if (!byteArray || byteArray.length === 0) {
+                showPreviewError(containerElement, "デコード後のデータが空です");
+                return;
+            }
 
 
 
@@ -567,6 +1934,9 @@
                 case "image/jpeg":
                 case "image/gif":
                 case "image/webp":
+                case "image/avif":
+                case "image/svg+xml":
+                    // SVG も img で出す。img の中ではスクリプトが動かない
                     const zoomContainer = document.createElement("div");
                     zoomContainer.className = "zoom-container";
 
@@ -716,6 +2086,7 @@
 
                 case "video/mp4":
                 case "video/webm":
+                case "video/ogg":
                     element = document.createElement("video");
                     element.src = blobURL;
                     element.controls = true;
@@ -725,6 +2096,7 @@
                     break;
 
                 case "audio/mpeg":
+                case "audio/mp3":
                 case "audio/wav":
                 case "audio/ogg":
                     element = document.createElement("audio");
@@ -762,66 +2134,12 @@
 
 
                 case "text/plain":
-                    // ★ text/plainの場合、まずBase64をテキストにデコード
-                    let plainTextContent = '';
-                    try {
-                        // Base64 → バイナリに変換
-                        const binaryString = atob(base64Data);
+                case "application/json":
+                    element = renderTextBlock(new TextDecoder('utf-8').decode(byteArray), true);
+                    break;
 
-                        // ★ バイナリ → UTF-8テキストに変換（文字化け対策）
-                        const uint8Array = new Uint8Array(binaryString.length);
-                        for (let i = 0; i < binaryString.length; i++) {
-                            uint8Array[i] = binaryString.charCodeAt(i);
-                        }
-                        const decoder = new TextDecoder('utf-8');
-                        plainTextContent = decoder.decode(uint8Array);
-
-                        console.log("✓ Base64デコード成功:", plainTextContent.substring(0, 100));
-                    } catch (e) {
-                        console.error("Base64デコード失敗:", e.message);
-                        element = document.createElement("p");
-                        element.style.color = "red";
-                        element.textContent = `エラー：Base64デコード失敗 - ${e.message}`;
-                        containerElement.appendChild(element);
-                        return;
-                    }
-
-                    // デコード後のテキストがJSONかどうかを判定
-                    try {
-                        const jsonData = JSON.parse(plainTextContent);
-
-                        // JSONパース成功 → JSON表示
-                        element = document.createElement("div");
-                        element.style.padding = "15px";
-                        element.style.backgroundColor = "#f5f5f5";
-                        element.style.borderRadius = "5px";
-                        element.style.whiteSpace = "pre-wrap";
-                        element.style.wordWrap = "break-word";
-                        element.style.fontFamily = "monospace";
-                        element.style.fontSize = "12px";
-                        element.style.maxHeight = "80vh";
-                        element.style.overflow = "auto";
-                        element.style.border = "1px solid #ddd";
-                        element.textContent = JSON.stringify(jsonData, null, 2);
-
-                        console.log("✓ JSON形式で表示します");
-                    } catch (e) {
-                        // JSONパース失敗 → プレーンテキスト表示
-                        element = document.createElement("div");
-                        element.style.padding = "15px";
-                        element.style.backgroundColor = "#f9f9f9";
-                        element.style.borderRadius = "5px";
-                        element.style.whiteSpace = "pre-wrap";
-                        element.style.wordWrap = "break-word";
-                        element.style.fontFamily = "monospace";
-                        element.style.fontSize = "12px";
-                        element.style.maxHeight = "80vh";
-                        element.style.overflow = "auto";
-                        element.style.border = "1px solid #ddd";
-                        element.textContent = plainTextContent;
-
-                        console.log("✓ プレーンテキスト形式で表示します");
-                    }
+                case "text/csv":
+                    element = renderTextBlock(new TextDecoder('utf-8').decode(byteArray), false);
                     break;
 
                 case "text/html":
@@ -979,26 +2297,6 @@
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        //WAB調査
-
         // ★ WAVファイルのメタデータを解析
         function analyzeWAVMetadata(byteArray) {
             const view = new DataView(byteArray.buffer, byteArray.byteOffset, byteArray.byteLength);
@@ -1085,7 +2383,7 @@
 
         // displayLostTransactionAnalysis を修正
         function displayLostTransactionAnalysis(debugInfo) {
-            const { transactionContinuity } = debugInfo;
+            const { transactionContinuity, fetchElapsedTime } = debugInfo;
             if (!transactionContinuity) return;
 
             const {
@@ -1099,6 +2397,15 @@
 
             let html = `<div style="background: ${isComplete ? '#d4edda' : '#fff3cd'}; border: 2px solid ${isComplete ? '#28a745' : '#ff9800'}; padding: 15px; margin: 10px 0; border-radius: 5px;">`;
             html += `<h3 style="color: ${isComplete ? '#155724' : '#ff6600'}; margin-top: 0;">${isComplete ? '✓' : '⚠'} トランザクション構造分析</h3>`;
+
+            // 経過時間を表示
+            if (fetchElapsedTime !== undefined) {
+                const elapsedSeconds = Math.floor(fetchElapsedTime / 1000);
+                const minutes = Math.floor(elapsedSeconds / 60);
+                const seconds = elapsedSeconds % 60;
+                const timeText = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+                html += `<p style="text-align: center; font-size: 14px; color: #555; margin: 5px 0 15px 0;">⏱️ トランザクション取得時間: <strong>${timeText}</strong></p>`;
+            }
 
             html += `<table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">`;
             html += `<tr style="background: ${isComplete ? '#c3e6cb' : '#ffe0b2'};">
